@@ -13,8 +13,9 @@ export async function manejar(ctx) {
   const modulo = ctx.cuerpo?.modulo
   const m = Object.hasOwn(MODULOS, modulo) ? MODULOS[modulo] : null
   if (!m) return err(400, 'Módulo no válido.')
-  const { fallo } = await autenticar(ctx.tdb, ctx.uid)
+  const { yo, fallo } = await autenticar(ctx.tdb, ctx.uid)
   if (fallo) return fallo
+  if (yo.debeCambiar && modulo !== 'password') return err(403, 'Debe cambiar su contraseña antes de continuar.')
   return m(ctx)
 }
 

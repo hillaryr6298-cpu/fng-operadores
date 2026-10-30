@@ -143,6 +143,8 @@ try {
   ok(lab.length === 1 && lab[0] === 'gerenterh', `etiqueta asignada por el servidor (${lab})`)
   const nuevo = { id: nuevoId, email: `n-${sufijo}@fng-test.invalid`, password: 'Temporal-Larga-123' }
   let sn = await sesion(nuevo)
+  r = await api(sn, { modulo: 'operadores', accion: 'crear', datos: datos(U.reclutador.id, `Prueba ${sufijo} Pendiente`) })
+  ok(r.status === 403 && /contraseña/i.test(r.body.mensaje ?? ''), 'con cambio de contraseña pendiente el servidor bloquea el resto de acciones (403)', JSON.stringify(r))
   r = await api(sn, { modulo: 'password', actual: 'Temporal-Larga-123', nueva: 'corta' })
   ok(r.status === 400, 'cambio de contraseña débil → 400')
   r = await api(sn, { modulo: 'password', actual: 'equivocada-xxxxx', nueva: 'Otra-Contraseña-456' })

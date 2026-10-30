@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ETAPAS, normalizarNombre, validarOperador, fechaInicio, totalDias,
-  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, type OperadorInput, type EtapaClave,
+  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, validarPassword, type OperadorInput, type EtapaClave,
 } from './dominio'
 
 const HOY = new Date('2026-10-30T12:00:00Z')
@@ -146,5 +146,18 @@ describe('etiquetaDeRol', () => {
   it('quita el guion bajo porque Appwrite solo admite etiquetas alfanuméricas', () => {
     expect(etiquetaDeRol('gerente_rh')).toBe('gerenterh')
     expect(etiquetaDeRol('admin')).toBe('admin')
+  })
+})
+
+describe('validarPassword', () => {
+  it('exige al menos 12 caracteres', () => {
+    expect(validarPassword('corta123')).not.toBeNull()
+    expect(validarPassword('doce-caracteres')).toBeNull()
+  })
+  it('rechaza más de 128 caracteres', () => {
+    expect(validarPassword('a'.repeat(129))).not.toBeNull()
+  })
+  it('rechaza contraseñas sin variedad (solo un carácter repetido)', () => {
+    expect(validarPassword('aaaaaaaaaaaaaa')).not.toBeNull()
   })
 })

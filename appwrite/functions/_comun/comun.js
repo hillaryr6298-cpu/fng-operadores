@@ -1,4 +1,4 @@
-import { Client, TablesDB, Users, ID, Query } from 'node-appwrite'
+import { Client, TablesDB, Users, Account, ID, Query } from 'node-appwrite'
 import { puedeEditar } from '../../../shared/dominio.ts'
 
 export const DB = 'fng'
@@ -11,6 +11,18 @@ export function clientes(req) {
     .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
     .setKey(req.headers['x-appwrite-key'])
   return { tdb: new TablesDB(c), users: new Users(c) }
+}
+
+/** Comprueba correo+contraseña abriendo una sesión efímera con un cliente sin credenciales. */
+export async function verificarPasswordReal(users, email, password) {
+  const anon = new Client().setEndpoint(process.env.APPWRITE_FUNCTION_API_ENDPOINT).setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
+  try {
+    const s = await new Account(anon).createEmailPasswordSession({ email, password })
+    await users.deleteSession({ userId: s.userId, sessionId: s.$id })
+    return true
+  } catch {
+    return false
+  }
 }
 
 export const respuesta = (status, body) => ({ status, body })
@@ -51,6 +63,7 @@ export function envolver(manejar) {
       const { tdb, users } = clientes(req)
       const r = await manejar({
         tdb, users, ahora: new Date(), uid: req.headers['x-appwrite-user-id'],
+        verificarPassword: (email, pass) => verificarPasswordReal(users, email, pass),
         cuerpo: req.bodyJson ?? {},
       })
       return res.json(r.body, r.status)

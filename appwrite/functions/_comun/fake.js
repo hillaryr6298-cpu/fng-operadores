@@ -38,3 +38,24 @@ export function crearFake(semilla = {}) {
     },
   }
 }
+
+/** Servicio Users en memoria. */
+export function crearFakeUsers() {
+  const u = new Map()
+  const llamadas = []
+  let n = 0
+  return {
+    _u: u, llamadas,
+    async create({ userId, email, password, name }) {
+      const id = userId === 'unique()' || !userId ? `u${++n}` : userId
+      if ([...u.values()].some((x) => x.email === email)) throw Object.assign(new Error('exists'), { code: 409 })
+      u.set(id, { $id: id, email, password, name, labels: [], status: true, sesiones: 2 })
+      return { $id: id, email, name }
+    },
+    async updateLabels({ userId, labels }) { u.get(userId).labels = labels },
+    async updateStatus({ userId, status }) { u.get(userId).status = status },
+    async updatePassword({ userId, password }) { u.get(userId).password = password },
+    async deleteSessions({ userId }) { llamadas.push(['deleteSessions', userId]); u.get(userId).sesiones = 0 },
+    async delete({ userId }) { u.delete(userId) },
+  }
+}

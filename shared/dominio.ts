@@ -161,3 +161,11 @@ export function puedeEditar(rol: Rol, uid: string, reclutadorId: string): boolea
 export function etiquetaDeRol(rol: Rol): string {
   return rol.replace(/_/g, '')
 }
+
+/** Devuelve un mensaje de error, o null si la contraseña es aceptable. */
+export function validarPassword(p: string): string | null {
+  if (typeof p !== 'string' || p.length < 12) return 'La contraseña debe tener al menos 12 caracteres.'
+  if (p.length > 128) return 'La contraseña es demasiado larga.'
+  if (new Set(p).size < 5) return 'La contraseña es demasiado simple.'
+  return null
+}

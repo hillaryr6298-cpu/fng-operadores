@@ -10,9 +10,7 @@ export type Sesion = { id: string; nombre: string; rol: Rol; email: string; debe
 /** undefined = aún comprobando; null = sin sesión. */
 export const sesion = signal<Sesion | null | undefined>(undefined)
 
-export const ETIQUETA_ROL: Record<Rol, string> = {
-  admin: 'Administrador', gerente_rh: 'Gerente de RH', reclutador: 'Reclutador', consulta: 'Consulta',
-}
+export { ETIQUETA_ROL } from './formato'
 
 /** Lee el perfil del usuario autenticado. Un perfil inactivo cierra la sesión. */
 export async function sesionActual(): Promise<Sesion | null> {

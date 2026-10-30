@@ -3,6 +3,10 @@ import { aFila, filaADominio, salida } from '../../_comun/operadores.js'
 import { DB, ID, Query, autenticar, auditar, envolver, err, esAdminOGerente, puedeEditar, respuesta } from '../../_comun/comun.js'
 
 const ACCIONES = ['crear', 'actualizar', 'descartar', 'contratar']
+const conflicto = (fila) =>
+  respuesta(409, { ok: false, status: 409, mensaje: 'El registro cambió.', errores: [{ campo: '', mensaje: 'El registro cambió.' }], actual: salida(fila) })
+const nombreRepetido = () => err(400, 'Datos no válidos.', [{ campo: 'nombre', mensaje: 'Ya existe un operador con ese nombre.' }])
+
 export async function manejar({ tdb, ahora, uid, cuerpo }) {
   const { yo, fallo } = await autenticar(tdb, uid)
   if (fallo) return fallo
@@ -19,8 +23,7 @@ export async function manejar({ tdb, ahora, uid, cuerpo }) {
       return err(404, 'Operador no encontrado.')
     }
     if (!puedeEditar(yo.rol, yo.uid, previa.reclutador_id)) return err(403, 'No puede editar este operador.')
-    if (previa.version !== version)
-      return respuesta(409, { ok: false, status: 409, mensaje: 'El registro cambió.', errores: [{ campo: '', mensaje: 'El registro cambió.' }], actual: salida(previa) })
+    if (previa.version !== version) return conflicto(previa)
   }
 
   // Construye el estado final del operador según la acción.
@@ -65,11 +68,33 @@ export async function manejar({ tdb, ahora, uid, cuerpo }) {
 
   const nombreRec = reclutador.nombre
   if (accion === 'crear') {
-    const fila = await tdb.createRow({ databaseId: DB, tableId: 'operadores', rowId: ID.unique(), data: aFila(nuevo, nombreRec, 1) })
+    let fila
+    try {
+      fila = await tdb.createRow({ databaseId: DB, tableId: 'operadores', rowId: ID.unique(), data: aFila(nuevo, nombreRec, 1) })
+    } catch (e) {
+      if (e.code === 409) return nombreRepetido() // la restricción única cubre altas simultáneas
+      throw e
+    }
     await auditar(tdb, yo, { entidad: 'operadores', registro_id: fila.$id, accion: 'crear', antes: null, despues: filaADominio(fila) }, ahora)
     return respuesta(200, { ok: true, doc: salida(fila) })
   }
-  const fila = await tdb.updateRow({ databaseId: DB, tableId: 'operadores', rowId: id, data: aFila(nuevo, nombreRec, previa.version + 1) })
+
+  // Compare-and-swap atómico: el incremento acotado solo prospera si nadie avanzó la versión desde que se leyó.
+  try {
+    await tdb.incrementRowColumn({ databaseId: DB, tableId: 'operadores', rowId: id, column: 'version', value: 1, max: previa.version + 1 })
+  } catch (e) {
+    if (e.code === 400 || e.code === 409) return conflicto(await tdb.getRow({ databaseId: DB, tableId: 'operadores', rowId: id }))
+    throw e
+  }
+  const data = aFila(nuevo, nombreRec, previa.version + 1)
+  delete data.version // ya incrementada de forma atómica
+  let fila
+  try {
+    fila = await tdb.updateRow({ databaseId: DB, tableId: 'operadores', rowId: id, data })
+  } catch (e) {
+    if (e.code === 409) return nombreRepetido()
+    throw e
+  }
   await auditar(tdb, yo, { entidad: 'operadores', registro_id: id, accion, antes: filaADominio(previa), despues: filaADominio(fila) }, ahora)
   return respuesta(200, { ok: true, doc: salida(fila) })
 }

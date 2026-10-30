@@ -14,3 +14,4 @@ appwrite/_dbg.mjs
 appwrite/_dev.mjs
 appwrite/_seed_dev.mjs
 appwrite/_dev_clean.mjs
+appwrite/_exp.mjs

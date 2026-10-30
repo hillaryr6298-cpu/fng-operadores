@@ -40,8 +40,8 @@ async function sesion(u) {
   return { tdb: new TablesDB(c), fn: new Functions(c), sessionId: s.$id, client: c }
 }
 
-async function api(s, cuerpo) {
-  const e = await s.fn.createExecution({ functionId: 'api', body: JSON.stringify(cuerpo), async: false, xpath: '/', method: 'POST', headers: { 'content-type': 'application/json' } })
+async function api(s, cuerpo, cabeceras = {}) {
+  const e = await s.fn.createExecution({ functionId: 'api', body: JSON.stringify(cuerpo), async: false, xpath: '/', method: 'POST', headers: { 'content-type': 'application/json', ...cabeceras } })
   let body = {}
   try { body = JSON.parse(e.responseBody) } catch { /* vacío */ }
   return { status: e.responseStatusCode, body }
@@ -97,6 +97,28 @@ try {
   ok(r.status === 200, 'gerente sí reasigna (200)', JSON.stringify(r))
   r = await api(S.admin, { modulo: 'operadores', accion: 'contratar', id: doc.id, version: 3 })
   ok(r.status === 400, 'contratar sin dictamen OK → 400')
+  r = await api(S.admin, { modulo: 'operadores', accion: 'actualizar', id: doc.id, version: 3, datos: datos(U.rec2.id, `Prueba ${sufijo} Uno`, { observaciones: 'v4' }) })
+  ok(r.status === 200 && r.body.doc?.version === 4, 'admin actualiza (versión 4)', JSON.stringify(r))
+
+  console.log('\n[Suplantación y carreras]')
+  // Un usuario "consulta" intenta hacerse pasar por el admin enviando la cabecera de identidad.
+  let suplantado = null
+  try {
+    suplantado = await api(S.consulta, { modulo: 'operadores', accion: 'crear', datos: datos(U.reclutador.id, `Prueba ${sufijo} Suplanta`) }, { 'x-appwrite-user-id': U.admin.id })
+  } catch (e) { suplantado = { status: e.code } }
+  ok(suplantado.status === 400 || suplantado.status === 403, `Appwrite rechaza cabeceras x-appwrite-* enviadas por el cliente o la API las deniega (${suplantado.status})`)
+  const ver = 4
+  const [c1, c2] = await Promise.all([
+    api(S.admin, { modulo: 'operadores', accion: 'actualizar', id: doc.id, version: ver, datos: datos(U.rec2.id, `Prueba ${sufijo} Uno`, { observaciones: 'A' }) }),
+    api(S.gerente_rh, { modulo: 'operadores', accion: 'actualizar', id: doc.id, version: ver, datos: datos(U.rec2.id, `Prueba ${sufijo} Uno`, { observaciones: 'B' }) }),
+  ])
+  ok([c1.status, c2.status].sort().join() === '200,409', `dos ediciones simultáneas con la misma versión: una gana, otra 409 (${c1.status},${c2.status})`)
+  const [d1, d2] = await Promise.all([
+    api(S.admin, { modulo: 'operadores', accion: 'crear', datos: datos(U.rec2.id, `Prueba ${sufijo} Gemelo`) }),
+    api(S.gerente_rh, { modulo: 'operadores', accion: 'crear', datos: datos(U.rec2.id, `PRUEBA ${sufijo} GEMELO`) }),
+  ])
+  for (const x of [d1, d2]) if (x.body.doc) creados.operadores.push(x.body.doc.id)
+  ok([d1.status, d2.status].sort().join() === '200,400', `dos altas simultáneas del mismo nombre: solo una (${d1.status},${d2.status})`)
 
   console.log('\n[Auditoría]')
   const aud = await S.gerente_rh.tdb.listRows({ databaseId: DB, tableId: 'auditoria', queries: [Query.equal('registro_id', [doc.id]), Query.limit(20)] })
@@ -160,7 +182,7 @@ try {
     for (const a of rows) await admin.deleteRow({ databaseId: DB, tableId: 'auditoria', rowId: a.$id }).catch(() => {})
     await users.delete({ userId: id }).catch(() => {})
   }
-  const resto = await admin.listRows({ databaseId: DB, tableId: 'perfiles', queries: [Query.contains('email', ['fng-test.invalid']), Query.limit(50)] }).catch(() => ({ rows: [] }))
+  const resto = await admin.listRows({ databaseId: DB, tableId: 'perfiles', queries: [Query.contains('email', [`-${sufijo}@fng-test.invalid`]), Query.limit(50)] }).catch(() => ({ rows: [] }))
   console.log(`  usuarios de prueba restantes: ${resto.rows.length}`)
   console.log(`\nResultado: ${pasadas} pasaron, ${falladas} fallaron`)
   process.exit(falladas ? 1 : 0)

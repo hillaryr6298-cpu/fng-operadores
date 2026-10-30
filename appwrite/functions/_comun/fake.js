@@ -1,5 +1,5 @@
 // TablesDB en memoria para pruebas de las Functions. Solo implementa lo que usan.
-export function crearFake(semilla = {}) {
+export function crearFake(semilla = {}, unicos = { operadores: ['nombre_norm'] }) {
   const tablas = {}
   for (const [t, filas] of Object.entries(semilla)) {
     tablas[t] = new Map(Object.entries(filas).map(([id, d]) => [id, { $id: id, ...d }]))
@@ -22,6 +22,8 @@ export function crearFake(semilla = {}) {
     async createRow({ tableId, rowId, data }) {
       const id = rowId === 'unique()' || !rowId ? `id${++n}` : rowId
       if (tabla(tableId).has(id)) throw Object.assign(new Error('exists'), { code: 409 })
+      for (const col of unicos[tableId] ?? [])
+        if ([...tabla(tableId).values()].some((f) => f[col] === data[col])) throw Object.assign(new Error('unique'), { code: 409 })
       const fila = { $id: id, ...structuredClone(data) }
       tabla(tableId).set(id, fila)
       return structuredClone(fila)
@@ -30,6 +32,13 @@ export function crearFake(semilla = {}) {
       const f = tabla(tableId).get(rowId)
       if (!f) throw noExiste()
       Object.assign(f, structuredClone(data))
+      return structuredClone(f)
+    },
+    async incrementRowColumn({ tableId, rowId, column, value = 1, max = null }) {
+      const f = tabla(tableId).get(rowId)
+      if (!f) throw noExiste()
+      if (max !== null && f[column] + value > max) throw Object.assign(new Error(`Column "${column}" has reached the maximum value of ${max}`), { code: 400 })
+      f[column] += value
       return structuredClone(f)
     },
     async listRows({ tableId, queries = [] }) {

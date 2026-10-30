@@ -141,3 +141,25 @@ test('acción desconocida → 400', async () => {
   const tdb = crearFake({ perfiles: perfiles() })
   assert.equal((await llamar(tdb, 'admin1', { accion: 'borrar' })).status, 400)
 })
+
+test('dos actualizaciones simultáneas con la misma versión: una gana, la otra recibe 409', async () => {
+  const tdb = crearFake({ perfiles: perfiles() })
+  const doc = await nuevo(tdb)
+  const [a, b] = await Promise.all([
+    llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'A' }) }),
+    llamar(tdb, 'ger1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'B' }) }),
+  ])
+  assert.deepEqual([a.status, b.status].sort(), [200, 409])
+  const fila = await tdb.getRow({ tableId: 'operadores', rowId: doc.id })
+  assert.equal(fila.version, 2)
+  assert.equal(fila.observaciones, a.status === 200 ? 'A' : 'B')
+})
+test('dos altas simultáneas del mismo nombre: la restricción única evita el duplicado (400)', async () => {
+  const tdb = crearFake({ perfiles: perfiles() })
+  const [a, b] = await Promise.all([
+    llamar(tdb, 'rec1', { accion: 'crear', datos: datos() }),
+    llamar(tdb, 'ger1', { accion: 'crear', datos: datos({ nombre: 'pedro  PRUEBA álvarez' }) }),
+  ])
+  assert.deepEqual([a.status, b.status].sort(), [200, 400])
+  assert.equal((await tdb.listRows({ tableId: 'operadores' })).total, 1)
+})

@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
-import { cerrarSesion, iniciarTemporizadorInactividad, sesion, sesionActual } from '../lib/auth'
+import { cerrarSesion, comprobarSesion, iniciarTemporizadorInactividad, sesion, sesionActual } from '../lib/auth'
 import { cargarTodo, suscribir } from '../lib/store'
 import { Avisos, avisar } from './componentes/toast'
 import { Layout } from './layout'
@@ -28,7 +28,10 @@ export function App() {
     })
     // Detecta usuarios desactivados o con sesión revocada sin esperar a la siguiente acción.
     const rev = setInterval(async () => {
-      if (!(await sesionActual())) { mensajeLogin.value = 'Su sesión ya no es válida. Inicie sesión de nuevo.'; await cerrarSesion() }
+      // Solo se cierra la sesión si es inválida de verdad; un fallo de red no debe expulsar ni hacer perder lo capturado.
+      const c = await comprobarSesion()
+      if (c.estado === 'invalida') { mensajeLogin.value = 'Su sesión ya no es válida. Inicie sesión de nuevo.'; await cerrarSesion() }
+      else if (c.estado === 'ok' && sesion.value && (c.sesion.rol !== sesion.value.rol || c.sesion.nombre !== sesion.value.nombre)) sesion.value = c.sesion
     }, REVALIDAR_MS)
     return () => { parar(); clearInterval(rev) }
   }, [logueado])

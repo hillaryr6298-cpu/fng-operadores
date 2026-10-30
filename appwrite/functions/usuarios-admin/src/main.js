@@ -1,5 +1,5 @@
 import { ROLES, etiquetaDeRol, validarPassword } from '../../../../shared/dominio.ts'
-import { DB, ID, autenticar, auditar, envolver, err, respuesta } from '../../_comun/comun.js'
+import { DB, ID, autenticar, auditar, envolver, err, errorPolitica, respuesta } from '../../_comun/comun.js'
 
 const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const ok = (extra = {}) => respuesta(200, { ok: true, ...extra })
@@ -33,6 +33,8 @@ export async function manejar({ tdb, users, ahora, uid, cuerpo }) {
       u = await users.create({ userId: ID.unique(), email: email.trim().toLowerCase(), password: passwordTemporal, name: nombre.trim() })
     } catch (x) {
       if (x.code === 409) return err(409, 'Ya existe un usuario con ese correo.')
+      const r = errorPolitica(x, 'passwordTemporal')
+      if (r) return r
       throw x
     }
     try {
@@ -68,6 +70,19 @@ export async function manejar({ tdb, users, ahora, uid, cuerpo }) {
       await aud(id, 'desactivar', publico(p), publico({ ...p, activo: false }))
       return ok()
     }
+    case 'cambiar_email': {
+      if (!reEmail.test(email ?? '')) return err(400, 'Correo no válido.', [{ campo: 'email', mensaje: 'Correo no válido.' }])
+      const nuevo = email.trim().toLowerCase()
+      try {
+        await users.updateEmail({ userId: id, email: nuevo })
+      } catch (x) {
+        if (x.code === 409) return err(409, 'Ya existe un usuario con ese correo.')
+        throw x
+      }
+      await tdb.updateRow({ databaseId: DB, tableId: 'perfiles', rowId: id, data: { email: nuevo } })
+      await aud(id, 'cambiar_email', publico(p), publico({ ...p, email: nuevo }))
+      return ok()
+    }
     case 'activar': {
       await users.updateStatus({ userId: id, status: true })
       await tdb.updateRow({ databaseId: DB, tableId: 'perfiles', rowId: id, data: { activo: true } })
@@ -77,7 +92,13 @@ export async function manejar({ tdb, users, ahora, uid, cuerpo }) {
     case 'reset': {
       const pe = validarPassword(passwordTemporal)
       if (pe) return err(400, pe, [{ campo: 'passwordTemporal', mensaje: pe }])
-      await users.updatePassword({ userId: id, password: passwordTemporal })
+      try {
+        await users.updatePassword({ userId: id, password: passwordTemporal })
+      } catch (x) {
+        const r = errorPolitica(x, 'passwordTemporal')
+        if (r) return r
+        throw x
+      }
       await users.deleteSessions({ userId: id })
       await tdb.updateRow({ databaseId: DB, tableId: 'perfiles', rowId: id, data: { debe_cambiar: true } })
       await aud(id, 'reset_password', null, null)

@@ -10,12 +10,12 @@ test('cambios en vivo y conflicto de versión entre dos sesiones', async ({ brow
 
   // A abre el detalle del primer operador y se queda con esa versión.
   const nombre = (await A.locator('td.nom').first().textContent())!
-  await A.locator('td.nom').first().click()
+  await A.locator('td.nom button').first().click()
   await expect(A.locator('.drawer')).toBeVisible()
 
   // B edita la misma persona (observaciones) y guarda.
   await B.getByPlaceholder('Nombre del operador').fill(nombre)
-  await B.locator('td.nom', { hasText: nombre }).first().click()
+  await B.locator('td.nom button', { hasText: nombre }).first().click()
   const nota = `nota-${Date.now()}`
   await B.locator('#obs').fill(nota)
   await B.getByRole('button', { name: 'Guardar cambios' }).click()
@@ -31,6 +31,6 @@ test('cambios en vivo y conflicto de versión entre dos sesiones', async ({ brow
   await expect(A.locator('.aviso').last()).toContainText('Cambios guardados')
 
   // B ve el cambio de A sin recargar (Realtime o respaldo): la fila de B refleja la nueva versión.
-  await B.locator('td.nom', { hasText: nombre }).first().click()
+  await B.locator('td.nom button', { hasText: nombre }).first().click()
   await expect(B.locator('#obs')).toHaveValue('texto de A', { timeout: 15_000 })
 })

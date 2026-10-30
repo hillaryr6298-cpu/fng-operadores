@@ -67,3 +67,10 @@ describe('resumenPor', () => {
     ])
   })
 })
+
+describe('atrasados con operadores sin fechas de etapa', () => {
+  it('usa la fecha de inicio (alta) como respaldo', () => {
+    const ops = [op('viaje', { fecha_inicio: '2026-09-30' }, { quimica_sanguinea: { fecha: null, res: 'OP_VIAJE' } })]
+    expect(atrasados(ops, HOY, 15).map((x) => [x.op.id, x.dias])).toEqual([['viaje', 30]])
+  })
+})

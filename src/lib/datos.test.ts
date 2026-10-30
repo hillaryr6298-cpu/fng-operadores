@@ -29,9 +29,15 @@ describe('aplicarEvento', () => {
     const r = aplicarEvento(base, 'update', fila('a', 2, { observaciones: 'x' }))
     expect(r.find((o) => o.id === 'a')!.observaciones).toBe('x')
   })
-  it('update con versión menor o igual se ignora', () => {
-    const r = aplicarEvento(base, 'update', fila('a', 1, { observaciones: 'viejo' }))
-    expect(r.find((o) => o.id === 'a')!.observaciones).toBe('')
+  it('update con versión menor se ignora', () => {
+    const lista = aplicarEvento(base, 'update', fila('a', 3, { observaciones: 'nuevo' }))
+    const r = aplicarEvento(lista, 'update', fila('a', 2, { observaciones: 'viejo' }))
+    expect(r.find((o) => o.id === 'a')!.observaciones).toBe('nuevo')
+  })
+  it('update con la MISMA versión reemplaza: un guardado emite dos eventos con la misma versión (incremento y luego datos)', () => {
+    const tras1 = aplicarEvento(base, 'update', fila('a', 2, { observaciones: '' }))     // evento del incremento atómico
+    const tras2 = aplicarEvento(tras1, 'update', fila('a', 2, { observaciones: 'datos finales' }))
+    expect(tras2.find((o) => o.id === 'a')!.observaciones).toBe('datos finales')
   })
   it('update de un id desconocido lo agrega', () => {
     expect(aplicarEvento(base, 'update', fila('z', 5)).map((o) => o.id)).toContain('z')

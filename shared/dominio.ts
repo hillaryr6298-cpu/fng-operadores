@@ -169,3 +169,8 @@ export function validarPassword(p: string): string | null {
   if (new Set(p).size < 5) return 'La contraseña es demasiado simple.'
   return null
 }
+
+/** Nombre para mostrar: conserva acentos y Ñ; solo recorta, colapsa espacios y pasa a mayúsculas. */
+export function limpiarNombre(s: string): string {
+  return s.replace(/\s+/g, ' ').trim().toLocaleUpperCase('es-MX')
+}

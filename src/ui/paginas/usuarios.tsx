@@ -12,6 +12,7 @@ type Dialogo =
   | { tipo: 'entrega'; email: string; password: string; titulo: string }
   | { tipo: 'reset'; id: string; nombre: string }
   | { tipo: 'rol'; id: string; nombre: string; rol: Rol }
+  | { tipo: 'email'; id: string; nombre: string }
   | { tipo: 'estado'; id: string; nombre: string; activar: boolean }
 
 export function Usuarios() {
@@ -57,6 +58,7 @@ export function Usuarios() {
                 <td><span class={`etiqueta ${p.activo ? 'ok' : 'bad'}`}>{p.activo ? 'Activo' : 'Desactivado'}</span></td>
                 <td style="text-align:right;white-space:nowrap">
                   {!propio && <button class="btn chico" type="button" onClick={() => { setError(''); setRol(p.rol as Rol); setDlg({ tipo: 'rol', id: p.id, nombre: p.nombre, rol: p.rol as Rol }) }}>Cambiar rol</button>}{' '}
+                  <button class="btn chico" type="button" onClick={() => { setError(''); setEmail(p.email); setDlg({ tipo: 'email', id: p.id, nombre: p.nombre }) }}>Cambiar correo</button>{' '}
                   <button class="btn chico" type="button" onClick={() => { setError(''); setDlg({ tipo: 'reset', id: p.id, nombre: p.nombre }) }}>Restablecer contraseña</button>{' '}
                   {!propio && <button class={`btn chico ${p.activo ? 'peligro' : ''}`} type="button" onClick={() => { setError(''); setDlg({ tipo: 'estado', id: p.id, nombre: p.nombre, activar: !p.activo }) }}>{p.activo ? 'Desactivar' : 'Activar'}</button>}
                 </td>
@@ -95,6 +97,12 @@ export function Usuarios() {
         <Modal titulo="Cambiar rol" onCerrar={() => setDlg(null)} acciones={<><button class="btn" type="button" onClick={() => setDlg(null)}>Cancelar</button><button class="btn primario" type="button" disabled={ocupado || rol === dlg.rol} onClick={() => correr({ accion: 'cambiar_rol', id: dlg.id, rol }, () => { setDlg(null); avisar('ok', 'Rol actualizado.') })}>Guardar</button></>}>
           {error && <div class="alerta bad" role="alert" style="margin-bottom:10px">{error}</div>}
           <div class="campo"><label for="cr">Rol de {dlg.nombre}</label><select id="cr" class="select" value={rol} onChange={(e) => setRol(e.currentTarget.value as Rol)}>{ROLES.map((r) => <option key={r} value={r}>{ETIQUETA_ROL[r]}</option>)}</select></div>
+        </Modal>)}
+
+      {dlg?.tipo === 'email' && (
+        <Modal titulo="Cambiar correo" onCerrar={() => setDlg(null)} acciones={<><button class="btn" type="button" onClick={() => setDlg(null)}>Cancelar</button><button class="btn primario" type="button" disabled={ocupado || !email.trim()} onClick={() => correr({ accion: 'cambiar_email', id: dlg.id, email }, () => { setDlg(null); avisar('ok', 'Correo actualizado.') })}>Guardar</button></>}>
+          {error && <div class="alerta bad" role="alert" style="margin-bottom:10px">{error}</div>}
+          <div class="campo"><label for="ce">Nuevo correo de {dlg.nombre}</label><input id="ce" class="input" type="email" value={email} onInput={(e) => setEmail(e.currentTarget.value)} /><span class="ayuda">Después restablezca su contraseña para entregarle un acceso nuevo.</span></div>
         </Modal>)}
 
       {dlg?.tipo === 'estado' && (

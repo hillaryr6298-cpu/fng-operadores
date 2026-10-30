@@ -22,7 +22,9 @@ export function Importar() {
   const faltantes = [...new Set(erroresLocales.map((e) => /^Reclutador "(.+)" no existe/.exec(e.mensaje)?.[1]).filter(Boolean))]
 
   async function elegir(e: Event) {
-    const f = (e.currentTarget as HTMLInputElement).files?.[0]
+    const entrada = e.currentTarget as HTMLInputElement
+    const f = entrada.files?.[0]
+    entrada.value = '' // permite volver a elegir el mismo archivo
     setHojas([]); setServidor([]); setError('')
     if (!f) return
     if (!/\.xlsx$/i.test(f.name)) return setError('Solo se admiten archivos .xlsx.')
@@ -36,6 +38,8 @@ export function Importar() {
           const descartados = /descartad/i.test(h.nombre)
           return { nombre: h.nombre, descartados, ...parsearHojaOperadores(h.filas, recs, hoyLocal(), { descartados }), incluir: true }
         })
+        // Se ignoran hojas que no son de operadores (p. ej. RESUMEN): sin columna NOMBRE OPERADOR.
+        .filter((h) => !(h.filas.length === 0 && h.errores.length === 1 && h.errores[0].fila === 1 && /NOMBRE OPERADOR/.test(h.errores[0].mensaje)))
         .filter((h) => h.filas.length || h.errores.length)
       if (!parsed.length) return setError('No se encontraron hojas con operadores. Verifique que tengan la columna "NOMBRE OPERADOR".')
       setArchivo(f.name); setHojas(parsed)

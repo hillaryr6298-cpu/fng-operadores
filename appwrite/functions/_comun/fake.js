@@ -41,6 +41,7 @@ export function crearFake(semilla = {}, unicos = { operadores: ['nombre_norm'] }
       f[column] += value
       return structuredClone(f)
     },
+    async deleteRow({ tableId, rowId }) { if (!tabla(tableId).delete(rowId)) throw noExiste() },
     async listRows({ tableId, queries = [] }) {
       const rows = [...tabla(tableId).values()].filter((f) => queries.every((q) => cumple(f, q)))
       return { total: rows.length, rows: structuredClone(rows) }

@@ -73,9 +73,9 @@ export function Operadores() {
           <thead>
             <tr>
               <th class="fija" aria-sort={orden.campo === 'nombre' ? (orden.dir === 1 ? 'ascending' : 'descending') : 'none'}><button class="btn fantasma chico" style="padding:0;height:auto;font:inherit;text-transform:inherit;letter-spacing:inherit" type="button" onClick={() => ordenar('nombre')}>Operador{flecha('nombre')}</button></th>
-              <th>Base</th><th>Reclutador</th><th>Modalidad</th><th>Estatus</th>
-              {ETAPAS.map((e) => <th key={e.clave}>{e.nombre}</th>)}
-              <th><button class="btn fantasma chico" style="padding:0;height:auto;font:inherit;text-transform:inherit;letter-spacing:inherit" type="button" onClick={() => ordenar('dias')}>Días{flecha('dias')}</button></th>
+              <th scope="col">Base</th><th scope="col">Reclutador</th><th scope="col">Modalidad</th><th scope="col">Estatus</th>
+              {ETAPAS.map((e) => <th scope="col" key={e.clave}>{e.nombre}</th>)}
+              <th scope="col" aria-sort={orden.campo === 'dias' ? (orden.dir === 1 ? 'ascending' : 'descending') : 'none'}><button class="btn fantasma chico" style="padding:0;height:auto;font:inherit;text-transform:inherit;letter-spacing:inherit" type="button" onClick={() => ordenar('dias')}>Días{flecha('dias')}</button></th>
             </tr>
           </thead>
           <tbody>
@@ -84,7 +84,7 @@ export function Operadores() {
               const d = totalDias(o.etapas, hoy)
               return (
                 <tr key={o.id}>
-                  <td class="fija nom" title={o.nombre} onClick={() => (operadorAbierto.value = o.id)}>{o.nombre}</td>
+                  <td class="fija nom" title={o.nombre}><button type="button" class="enlace-nombre" onClick={() => (operadorAbierto.value = o.id)}>{o.nombre}</button></td>
                   <td>{o.base}</td><td>{o.reclutador_nombre}</td><td>{ETIQUETA_MODALIDAD[o.modalidad]}</td>
                   <td><span class={`etiqueta ${CLASE_ESTATUS[o.estatus]}`}>{ETIQUETA_ESTATUS[o.estatus]}</span></td>
                   {ETAPAS.map((e, c) => {

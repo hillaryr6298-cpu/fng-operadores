@@ -53,6 +53,17 @@ export async function auditar(tdb, yo, { entidad, registro_id, accion, antes, de
   })
 }
 
+/** Traduce el rechazo de una política de contraseña de Appwrite a un mensaje accionable. */
+export function mensajePolitica(msg = '') {
+  const m = msg.toLowerCase()
+  if (m.includes('exposed') || m.includes('breach')) return 'Esa contraseña aparece en filtraciones públicas; elija otra.'
+  if (m.includes('personal')) return 'La contraseña no debe contener su nombre, correo ni identificador.'
+  if (m.includes('common') || m.includes('dictionary')) return 'Es una contraseña demasiado común; elija otra.'
+  if (m.includes('history')) return 'No puede reutilizar una contraseña anterior.'
+  return 'La contraseña no cumple la política de seguridad.'
+}
+export const errorPolitica = (e, campo) => (e?.code === 400 ? err(400, mensajePolitica(e.message), [{ campo, mensaje: mensajePolitica(e.message) }]) : null)
+
 export const esAdminOGerente = (rol) => rol === 'admin' || rol === 'gerente_rh'
 export { puedeEditar }
 

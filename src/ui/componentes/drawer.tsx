@@ -2,6 +2,19 @@ import type { ComponentChildren } from 'preact'
 import { useEffect, useRef } from 'preact/hooks'
 import { Icono } from './iconos'
 
+const FOCALIZABLES = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+
+/** Mantiene el foco del teclado dentro del contenedor mientras esté abierto (Tab / Shift+Tab). */
+function atraparFoco(e: KeyboardEvent, contenedor: HTMLElement | null) {
+  if (e.key !== 'Tab' || !contenedor) return
+  const f = [...contenedor.querySelectorAll<HTMLElement>(FOCALIZABLES)].filter((x) => x.offsetParent !== null)
+  if (!f.length) return
+  const primero = f[0], ultimo = f[f.length - 1]
+  if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus() }
+  else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus() }
+  else if (!contenedor.contains(document.activeElement)) { e.preventDefault(); primero.focus() }
+}
+
 /** Panel lateral. Esc cierra; el foco entra al abrir y vuelve al elemento previo al cerrar. */
 export function Drawer({ titulo, subtitulo, onCerrar, children, pie }: {
   titulo: string; subtitulo?: ComponentChildren; onCerrar: () => void; children: ComponentChildren; pie?: ComponentChildren
@@ -10,7 +23,7 @@ export function Drawer({ titulo, subtitulo, onCerrar, children, pie }: {
   useEffect(() => {
     const previo = document.activeElement as HTMLElement | null
     ref.current?.querySelector<HTMLElement>('input,select,textarea,button:not([data-cerrar])')?.focus()
-    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar() }
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); else atraparFoco(e, ref.current) }
     document.addEventListener('keydown', tecla)
     return () => { document.removeEventListener('keydown', tecla); previo?.focus?.() }
   }, [])
@@ -32,15 +45,18 @@ export function Drawer({ titulo, subtitulo, onCerrar, children, pie }: {
 export function Modal({ titulo, children, onCerrar, acciones }: {
   titulo: string; children: ComponentChildren; onCerrar: () => void; acciones: ComponentChildren
 }) {
+  const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar() }
+    const previo = document.activeElement as HTMLElement | null
+    ref.current?.querySelector<HTMLElement>('input,select,textarea,button')?.focus()
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); else atraparFoco(e, ref.current) }
     document.addEventListener('keydown', tecla)
-    return () => document.removeEventListener('keydown', tecla)
+    return () => { document.removeEventListener('keydown', tecla); previo?.focus?.() }
   }, [])
   return (
     <>
       <div class="velo" style="z-index:70" onClick={onCerrar} />
-      <div class="modal" style="z-index:71" role="dialog" aria-modal="true" aria-label={titulo}>
+      <div class="modal" style="z-index:71" role="dialog" aria-modal="true" aria-label={titulo} ref={ref}>
         <h2>{titulo}</h2>
         {children}
         <div class="acciones">{acciones}</div>

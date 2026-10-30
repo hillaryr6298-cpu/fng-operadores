@@ -2,7 +2,8 @@ import { normalizarNombre, validarOperador } from '../../../../shared/dominio.ts
 import { aFila } from '../../_comun/operadores.js'
 import { DB, ID, Query, autenticar, auditar, envolver, err, esAdminOGerente, respuesta } from '../../_comun/comun.js'
 
-const MAX_FILAS = 500
+const MAX_FILAS = 150
+const PARALELO = 10
 
 export async function manejar({ tdb, ahora, uid, cuerpo }) {
   const { yo, fallo } = await autenticar(tdb, uid)
@@ -47,9 +48,21 @@ export async function manejar({ tdb, ahora, uid, cuerpo }) {
   if (!confirmar) return respuesta(200, { ok: true, validas: filas.length - new Set(errores.map((x) => x.fila)).size, errores })
   if (errores.length) return respuesta(400, { ok: false, status: 400, mensaje: 'Hay filas con errores; no se importó nada.', errores })
 
-  for (const f of filas) {
-    const fila = await tdb.createRow({ databaseId: DB, tableId: 'operadores', rowId: ID.unique(), data: aFila(f, reclutadores.get(f.reclutador_id).nombre, 1) })
-    await auditar(tdb, yo, { entidad: 'operadores', registro_id: fila.$id, accion: 'importar', antes: null, despues: { nombre: fila.nombre } }, ahora)
+  // Escritura en bloques paralelos para caber en el límite de 30 s; si algo falla se revierte todo el lote.
+  const creadas = []
+  try {
+    for (let i = 0; i < filas.length; i += PARALELO) {
+      const bloque = filas.slice(i, i + PARALELO)
+      const nuevas = await Promise.allSettled(bloque.map((f) =>
+        tdb.createRow({ databaseId: DB, tableId: 'operadores', rowId: ID.unique(), data: aFila(f, reclutadores.get(f.reclutador_id).nombre, 1, { ahora }) })))
+      for (const r of nuevas) if (r.status === 'fulfilled') creadas.push(r.value)
+      const fallo = nuevas.find((r) => r.status === 'rejected')
+      if (fallo) throw fallo.reason
+    }
+    await Promise.all(creadas.map((fila) => auditar(tdb, yo, { entidad: 'operadores', registro_id: fila.$id, accion: 'importar', antes: null, despues: { nombre: fila.nombre } }, ahora)))
+  } catch (e) {
+    await Promise.allSettled(creadas.map((fila) => tdb.deleteRow({ databaseId: DB, tableId: 'operadores', rowId: fila.$id })))
+    throw e
   }
   return respuesta(200, { ok: true, creadas: filas.length })
 }

@@ -1,5 +1,5 @@
 import { validarPassword } from '../../../../shared/dominio.ts'
-import { DB, autenticar, auditar, envolver, err, respuesta } from '../../_comun/comun.js'
+import { DB, autenticar, auditar, envolver, err, errorPolitica, respuesta } from '../../_comun/comun.js'
 
 export async function manejar({ tdb, users, ahora, uid, cuerpo, verificarPassword }) {
   const { yo, fallo } = await autenticar(tdb, uid)
@@ -11,7 +11,13 @@ export async function manejar({ tdb, users, ahora, uid, cuerpo, verificarPasswor
   if (nueva === actual) return err(400, 'La nueva contraseña debe ser distinta.', [{ campo: 'nueva', mensaje: 'Debe ser distinta de la actual.' }])
   const perfil = await tdb.getRow({ databaseId: DB, tableId: 'perfiles', rowId: yo.uid })
   if (!(await verificarPassword(perfil.email, actual))) return err(403, 'La contraseña actual no es correcta.')
-  await users.updatePassword({ userId: yo.uid, password: nueva })
+  try {
+    await users.updatePassword({ userId: yo.uid, password: nueva })
+  } catch (e) {
+    const r = errorPolitica(e, 'nueva')
+    if (r) return r
+    throw e
+  }
   await tdb.updateRow({ databaseId: DB, tableId: 'perfiles', rowId: yo.uid, data: { debe_cambiar: false } })
   await users.deleteSessions({ userId: yo.uid })
   await auditar(tdb, yo, { entidad: 'perfiles', registro_id: yo.uid, accion: 'cambiar_password', antes: null, despues: null }, ahora)

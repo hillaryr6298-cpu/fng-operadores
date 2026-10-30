@@ -1,4 +1,3 @@
-import { signal } from '@preact/signals'
 import { useMemo, useState } from 'preact/hooks'
 import { ETAPAS, normalizarNombre, puedeEditar, totalDias, type EtapaClave, type Estatus } from '../../../shared/dominio'
 import { sesion } from '../../lib/auth'
@@ -7,10 +6,7 @@ import { CLASE_ESTATUS, ETIQUETA_ESTATUS, ETIQUETA_MODALIDAD, etiquetaMes, hoyLo
 import { bases, cargando, errorCarga, operadores, perfiles } from '../../lib/store'
 import { EditorEtapa } from '../componentes/editor-etapa'
 import { Icono } from '../componentes/iconos'
-import { OperadorForm } from '../componentes/operador-form'
-
-/** Operador abierto desde otras pantallas (tablero, descartados). */
-export const operadorAbierto = signal<string | null | undefined>(undefined) // undefined = cerrado, null = nuevo
+import { operadorAbierto } from '../estado'
 
 type Orden = { campo: 'nombre' | 'dias' | 'inicio'; dir: 1 | -1 }
 
@@ -119,7 +115,6 @@ export function Operadores() {
       </div>
 
       {editor && <EditorEtapa key={`${editor.opId}${editor.clave}`} {...editor} onCerrar={() => setEditor(null)} />}
-      {operadorAbierto.value !== undefined && <OperadorForm key={operadorAbierto.value ?? 'nuevo'} opId={operadorAbierto.value} onCerrar={() => (operadorAbierto.value = undefined)} />}
     </section>
   )
 }

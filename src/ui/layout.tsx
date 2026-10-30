@@ -2,6 +2,8 @@ import { signal } from '@preact/signals'
 import type { ComponentChildren } from 'preact'
 import { ETIQUETA_ROL, cerrarSesion, sesion } from '../lib/auth'
 import { Icono } from './componentes/iconos'
+import { OperadorForm } from './componentes/operador-form'
+import { operadorAbierto } from './estado'
 import { RUTAS, type Ruta } from './rutas'
 
 export const abierto = signal(false)
@@ -34,6 +36,7 @@ export function Layout({ ruta, children }: { ruta: Ruta; children: ComponentChil
       <main class="contenido" id="contenido">
         <button class="btn menu-movil" type="button" onClick={() => (abierto.value = true)} aria-label="Abrir menú"><Icono n="menu" /> Menú</button>
         {children}
+        {operadorAbierto.value !== undefined && <OperadorForm key={operadorAbierto.value ?? 'nuevo'} opId={operadorAbierto.value} onCerrar={() => (operadorAbierto.value = undefined)} />}
       </main>
     </div>
   )

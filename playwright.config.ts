@@ -8,11 +8,11 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:4173/fng-operadores/',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:4173/fng-operadores/',
     viewport: { width: 1440, height: 900 },
     actionTimeout: 20_000,
     launchOptions: { executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium' },
     proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } : undefined,
   },
-  webServer: { command: 'npx vite preview --port 4173 --host 127.0.0.1', url: 'http://localhost:4173/fng-operadores/', reuseExistingServer: true },
+  webServer: process.env.E2E_BASE_URL ? undefined : { command: 'npx vite preview --port 4173 --host 127.0.0.1', url: 'http://localhost:4173/fng-operadores/', reuseExistingServer: true },
 })

@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals'
 import { useEffect } from 'preact/hooks'
 import { cerrarSesion, iniciarTemporizadorInactividad, sesion, sesionActual } from '../lib/auth'
+import { cargarTodo, suscribir } from '../lib/store'
 import { Avisos, avisar } from './componentes/toast'
 import { Layout } from './layout'
 import { CambiarPassword, Login, mensajeLogin } from './paginas/login'
@@ -31,6 +32,12 @@ export function App() {
     }, REVALIDAR_MS)
     return () => { parar(); clearInterval(rev) }
   }, [logueado])
+
+  useEffect(() => {
+    if (!logueado || sesion.value?.debeCambiar) return
+    void cargarTodo()
+    return suscribir()
+  }, [logueado, sesion.value?.debeCambiar])
 
   const s = sesion.value
   let cuerpo

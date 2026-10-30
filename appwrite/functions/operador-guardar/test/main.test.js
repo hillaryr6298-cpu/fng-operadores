@@ -7,7 +7,7 @@ import { ETAPAS } from '../../../../shared/dominio.ts'
 const AHORA = new Date('2026-10-30T12:00:00Z')
 const etapasVacias = () => Object.fromEntries(ETAPAS.map((e) => [e.clave, { fecha: null, res: null }]))
 const datos = (o = {}) => ({
-  nombre: 'Jorge Osvaldo Hernández Hernández', base: 'SLP', reclutador_id: 'rec1', modalidad: 'SENCILLO',
+  nombre: 'Pedro Prueba Álvarez', base: 'SLP', reclutador_id: 'rec1', modalidad: 'SENCILLO',
   estatus: 'LABORATORIOS', etapas: etapasVacias(), ...o,
 })
 const perfiles = () => ({
@@ -45,7 +45,7 @@ test('crear guarda nombre normalizado, version 1, fecha_inicio y auditoría', as
   })
   assert.equal(r.status, 200)
   const fila = await tdb.getRow({ tableId: 'operadores', rowId: r.body.doc.id })
-  assert.equal(fila.nombre_norm, 'JORGE OSVALDO HERNANDEZ HERNANDEZ')
+  assert.equal(fila.nombre_norm, 'PEDRO PRUEBA ALVAREZ')
   assert.equal(fila.reclutador_nombre, 'CARMEN')
   assert.equal(fila.version, 1)
   assert.match(fila.fecha_inicio, /^2026-10-12/)
@@ -58,7 +58,7 @@ test('crear guarda nombre normalizado, version 1, fecha_inicio y auditoría', as
 test('nombre duplicado con otros acentos/espacios → 400 en nombre', async () => {
   const tdb = crearFake({ perfiles: perfiles() })
   await nuevo(tdb)
-  const r = await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ nombre: ' JORGE  OSVALDO HERNANDEZ HERNANDEZ ' }) })
+  const r = await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ nombre: ' PEDRO  PRUEBA ALVAREZ ' }) })
   assert.equal(r.status, 400)
   assert.ok(r.body.errores.some((e) => e.campo === 'nombre'))
 })

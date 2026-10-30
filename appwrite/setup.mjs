@@ -1,6 +1,6 @@
 // Crea (de forma idempotente) la base de datos, colecciones, atributos, índices, permisos y bases semilla.
 // Uso: APPWRITE_API_KEY=... node appwrite/setup.mjs [--admin-email x --admin-pass y --admin-nombre z]
-import { Permission, Role, ID } from 'node-appwrite'
+import { Permission, Role, ID, Query } from 'node-appwrite'
 import { cliente, DB } from './cliente.mjs'
 import { ETAPAS, ESTATUS, MODALIDADES, RESULTADOS, ROLES, etiquetaDeRol } from '../shared/dominio.ts'
 
@@ -28,7 +28,8 @@ const colecciones = [
   {
     id: 'perfiles', nombre: 'Perfiles', permisos: leer(LECTORES),
     attrs: [str('nombre', 100, true), { key: 'rol', type: 'enum', elements: ['admin', 'gerente_rh', 'reclutador', 'consulta'], required: true },
-      { key: 'activo', type: 'boolean', required: true }, str('email', 255, true)],
+      { key: 'activo', type: 'boolean', required: true }, str('email', 255, true),
+      { key: 'debe_cambiar', type: 'boolean', required: false, default: false }],
     indices: [],
   },
   {
@@ -72,17 +73,28 @@ async function asegurarBD() {
   }
 }
 
+async function columnasFaltantes(c) {
+  const { columns } = await tdb.listColumns({ databaseId: DB, tableId: c.id, queries: [Query.limit(100)] })
+  const tiene = new Set(columns.map((x) => x.key))
+  for (const a of c.attrs.filter((x) => !tiene.has(x.key))) {
+    if (a.type !== 'boolean') throw new Error(`Columna faltante ${c.id}.${a.key}: tipo ${a.type} no soportado por setup`)
+    await tdb.createBooleanColumn({ databaseId: DB, tableId: c.id, key: a.key, required: a.required, xdefault: a.default })
+    console.log('  + columna', a.key)
+  }
+}
+
 async function asegurarColeccion(c) {
   if (await existe(() => tdb.getTable({ databaseId: DB, tableId: c.id }))) {
     console.log('= colección', c.id)
     // Los permisos se reafirman siempre (fuente de verdad: este archivo).
     await tdb.updateTable({ databaseId: DB, tableId: c.id, name: c.nombre, permissions: c.permisos, rowSecurity: false, enabled: true })
+    await columnasFaltantes(c)
     return
   }
   await tdb.createTable({ databaseId: DB, tableId: c.id, name: c.nombre, permissions: c.permisos, rowSecurity: false, columns: c.attrs, indexes: [] })
   console.log('+ colección', c.id)
   for (let i = 0; i < 90; i++) {
-    const { columns: attributes } = await tdb.listColumns({ databaseId: DB, tableId: c.id })
+    const { columns: attributes } = await tdb.listColumns({ databaseId: DB, tableId: c.id, queries: [Query.limit(100)] })
     if (attributes.length >= c.attrs.length && attributes.every((a) => a.status === 'available')) break
     if (attributes.some((a) => a.status === 'failed')) throw new Error(`Atributo fallido en ${c.id}`)
     await dormir(1500)

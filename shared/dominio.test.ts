@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   ETAPAS, normalizarNombre, validarOperador, fechaInicio, totalDias,
-  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, type OperadorInput, type EtapaClave,
+  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, validarPassword, type OperadorInput, type EtapaClave,
 } from './dominio'
 
 const HOY = new Date('2026-10-30T12:00:00Z')
 const vacias = () =>
   Object.fromEntries(ETAPAS.map((e) => [e.clave, { fecha: null, res: null }])) as OperadorInput['etapas']
 const base = (o: Partial<OperadorInput> = {}): OperadorInput => ({
-  nombre: 'JORGE OSVALDO HERNANDEZ HERNANDEZ', base: 'SLP', reclutador_id: 'u1',
+  nombre: 'PEDRO PRUEBA ALVAREZ', base: 'SLP', reclutador_id: 'u1',
   modalidad: 'SENCILLO', estatus: 'LABORATORIOS', etapas: vacias(), ...o,
 })
 const con = (cambios: Partial<Record<EtapaClave, { fecha: string | null; res: any }>>) => {
@@ -22,7 +22,7 @@ describe('normalizarNombre', () => {
     expect(normalizarNombre('  José  Peña ')).toBe('JOSE PENA')
   })
   it('recorta espacios finales como en el Excel', () => {
-    expect(normalizarNombre('MAURO LOPEZ GRANADOS ')).toBe('MAURO LOPEZ GRANADOS')
+    expect(normalizarNombre('MARIO PRUEBA GARCIA ')).toBe('MARIO PRUEBA GARCIA')
   })
 })
 
@@ -146,5 +146,18 @@ describe('etiquetaDeRol', () => {
   it('quita el guion bajo porque Appwrite solo admite etiquetas alfanuméricas', () => {
     expect(etiquetaDeRol('gerente_rh')).toBe('gerenterh')
     expect(etiquetaDeRol('admin')).toBe('admin')
+  })
+})
+
+describe('validarPassword', () => {
+  it('exige al menos 12 caracteres', () => {
+    expect(validarPassword('corta123')).not.toBeNull()
+    expect(validarPassword('doce-caracteres')).toBeNull()
+  })
+  it('rechaza más de 128 caracteres', () => {
+    expect(validarPassword('a'.repeat(129))).not.toBeNull()
+  })
+  it('rechaza contraseñas sin variedad (solo un carácter repetido)', () => {
+    expect(validarPassword('aaaaaaaaaaaaaa')).not.toBeNull()
   })
 })

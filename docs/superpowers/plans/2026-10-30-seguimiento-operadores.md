@@ -26,7 +26,7 @@
 
 ## Review Focus
 
-1. Nombres con acentos, ñ, espacios dobles o finales ("MAURO LOPEZ GRANADOS ", "José" vs "JOSE") deben detectarse como duplicados. → Task 2.
+1. Nombres con acentos, ñ, espacios dobles o finales ("MARIO PRUEBA GARCIA ", "José" vs "JOSE") deben detectarse como duplicados. → Task 2.
 2. Excel real: celdas de fecha con texto ("N|A (LOCAL)", "OP. VIAJE", "OK"), filas vacías, duplicados dentro del archivo, fechas de otro mes. → Task 6 y 11.
 3. Dos usuarios editan el mismo operador a la vez: el segundo recibe conflicto 409 y la UI ofrece recargar sin perder lo escrito. → Tasks 4 y 9.
 4. Usuario desactivado o rol cambiado con sesión abierta: la siguiente escritura se rechaza y la lectura deja de funcionar. → Tasks 5 y 7.
@@ -87,7 +87,7 @@ export function deDocumento(d:Record<string,any>): OperadorInput
 export function puedeEditar(rol:Rol, uid:string, reclutadorId:string): boolean
 ```
 
-- [ ] **Step 1: Tests que fallan.** Casos con valores del Excel: `normalizarNombre('  José  Peña ')==='JOSE PENA'`; `normalizarNombre('MAURO LOPEZ GRANADOS ')==='MAURO LOPEZ GRANADOS'`; fechas fuera de orden (`prueba_manejo` anterior a `solicitud_examen_cryo`) → error en `prueba_manejo`; fecha > hoy+30 → error; `res:'OK'` con fecha null es válido; `res:'FECHA'` sin fecha → error; `estatus:'CONTRATADO'` sin `dictamen_cryo.res==='OK'` → error; `DESCARTADO` sin `motivo_descarte` → error; `totalDias` con contratación = diferencia en días, sin contratación = hasta `hoy`, sin fechas = null; `puedeEditar` true para admin/gerente, true para reclutador solo si `uid===reclutadorId`, false para consulta; `aDocumento`/`deDocumento` ida y vuelta idéntica.
+- [ ] **Step 1: Tests que fallan.** Casos con valores del Excel: `normalizarNombre('  José  Peña ')==='JOSE PENA'`; `normalizarNombre('MARIO PRUEBA GARCIA ')==='MARIO PRUEBA GARCIA'`; fechas fuera de orden (`prueba_manejo` anterior a `solicitud_examen_cryo`) → error en `prueba_manejo`; fecha > hoy+30 → error; `res:'OK'` con fecha null es válido; `res:'FECHA'` sin fecha → error; `estatus:'CONTRATADO'` sin `dictamen_cryo.res==='OK'` → error; `DESCARTADO` sin `motivo_descarte` → error; `totalDias` con contratación = diferencia en días, sin contratación = hasta `hoy`, sin fechas = null; `puedeEditar` true para admin/gerente, true para reclutador solo si `uid===reclutadorId`, false para consulta; `aDocumento`/`deDocumento` ida y vuelta idéntica.
 - [ ] **Step 2:** Run `npx vitest run shared` → Expected: FAIL (módulo no existe).
 - [ ] **Step 3:** Implementar `shared/dominio.ts` con las firmas anteriores (sin dependencias externas). Orden cronológico se evalúa solo entre etapas con fecha, en el orden de `ETAPAS`; `revaloracion` queda exenta del orden estricto (puede ocurrir después de `solicitud_examen_cryo` y antes de `resultado_premedicos_cryo`, ver Excel).
 - [ ] **Step 4:** Run `npx vitest run shared` → Expected: PASS.
@@ -136,7 +136,7 @@ export function puedeEditar(rol:Rol, uid:string, reclutadorId:string): boolean
 
 **Interfaces — Produces:** `parsearHojaOperadores(filas: any[][], reclutadores: {id:string;nombre:string}[], hoy: Date): { filas: OperadorInput[]; errores: {fila:number; mensaje:string}[] }` en `excel.ts`. Mapea columnas por encabezado del Excel (A–Q); texto "N|A (LOCAL)"→`NA_LOCAL`, "OP. VIAJE"→`OP_VIAJE`, "OK"→`OK`, "NO APTO"→`NO_APTO`, fecha real→`FECHA`; ignora filas vacías y recorta espacios; reclutador por nombre (CARMEN→perfil); estatus "PREMEDICO CRYO"→`PREMEDICO_CRYO` etc.; hoja DESCARTADOS → `DESCARTADO` con `observaciones` como `motivo_descarte`. `importar-excel` in `{filas: OperadorInput[], confirmar:boolean}`: sin `confirmar` valida y devuelve vista previa/errores sin escribir; con `confirmar` crea en lote y audita. Solo admin y gerente_rh. `bases-admin` in `{accion:'crear'|'activar'|'desactivar', nombre}` solo admin.
 
-- [ ] **Step 1: Tests que fallan** (parser con las filas reales del Excel de octubre como fixture): 26 activos + 2 descartados parseados sin errores; `'MAURO LOPEZ GRANADOS '` recortado; duplicado dentro del archivo → error con número de fila; reclutador inexistente → error; función sin `confirmar` no escribe nada; rol `reclutador` → 403.
+- [ ] **Step 1: Tests que fallan** (parser con las filas reales del Excel de octubre como fixture): 26 activos + 2 descartados parseados sin errores; `'MARIO PRUEBA GARCIA '` recortado; duplicado dentro del archivo → error con número de fila; reclutador inexistente → error; función sin `confirmar` no escribe nada; rol `reclutador` → 403.
 - [ ] **Step 2:** Run `npx vitest run src/lib/excel` y `node --test appwrite/functions/importar-excel` → FAIL.
 - [ ] **Step 3:** Implementar parser y funciones.
 - [ ] **Step 4:** Run tests → PASS.

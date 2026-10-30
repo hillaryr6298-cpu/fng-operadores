@@ -11,3 +11,4 @@ appwrite/functions/*/shared
 *.xlsx
 appwrite/.build
 appwrite/_dbg.mjs
+appwrite/_dev.mjs

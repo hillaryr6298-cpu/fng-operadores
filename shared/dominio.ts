@@ -156,3 +156,8 @@ export function puedeEditar(rol: Rol, uid: string, reclutadorId: string): boolea
   if (rol === 'reclutador') return uid === reclutadorId
   return false
 }
+
+/** Appwrite solo admite etiquetas (labels) alfanuméricas. */
+export function etiquetaDeRol(rol: Rol): string {
+  return rol.replace(/_/g, '')
+}

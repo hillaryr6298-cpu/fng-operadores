@@ -25,7 +25,7 @@ Revisión de código y de configuración real (Appwrite en vivo), con verificaci
 | 7 | Media | `xlsx@0.18.5` (npm) con prototype pollution y ReDoS al leer archivos manipulados | `npm audit` | **Pendiente (decisión)**: pasar a SheetJS 0.20.x desde el CDN oficial o cambiar de librería. Mitigación actual: solo Admin/Gerente importan, máx. 5 MB, errores controlados |
 | 8 | Media | Dos nombres reales de operadores quedaron en el historial git de un repo público (commits tempranos) | `git log -S` | **Pendiente (usuario)**: reescribir historial y forzar push, o aceptar el riesgo (solo nombres) |
 | 9 | Baja | Todos los roles leen `perfiles` (incluye correos corporativos) | Prueba de lectura por rol | Aceptado: necesario para mostrar nombres; mover el correo a una tabla solo-admin si se desea |
-| 10 | Baja | Plataforma `localhost` registrada en Appwrite para pruebas | `GET /project/platforms` | **Pendiente al cierre**: eliminarla |
+| 10 | Baja | Plataforma `localhost` registrada en Appwrite para pruebas | `GET /project/platforms` | **Corregido**: eliminada |
 | 11 | Baja | GitHub Actions por etiqueta mayor (v4), no por SHA | `desplegar.yml` | Aceptado (acciones oficiales de GitHub) |
 | 12 | Info | Las cabeceras `x-appwrite-*` enviadas por el cliente son rechazadas por Appwrite (400) | Prueba de suplantación | Sin acción |
 

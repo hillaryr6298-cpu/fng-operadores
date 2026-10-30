@@ -40,15 +40,22 @@ export function App() {
   }, [logueado, sesion.value?.debeCambiar])
 
   const s = sesion.value
+  const pedida = hash.value.replace(/^#\/?/, '').split('?')[0]
+  const ruta = s ? RUTAS.filter((r) => r.roles.includes(s.rol)).find((r) => r.ruta === pedida) : undefined
+
+  // La redirección va en un efecto: avisar() escribe una señal y, dentro del render, provocaría un bucle.
+  useEffect(() => {
+    if (!s || s.debeCambiar || ruta) return
+    if (pedida && RUTAS.some((r) => r.ruta === pedida)) avisar('bad', 'No tiene permiso para esa sección.')
+    location.hash = '#/panel'
+  }, [s?.id, s?.debeCambiar, pedida, !!ruta])
+
   let cuerpo
   if (s === undefined) cuerpo = <div class="cargando" role="status" aria-label="Cargando"><span class="pulso" /></div>
   else if (!s) cuerpo = <Login />
   else if (s.debeCambiar) cuerpo = <CambiarPassword />
+  else if (!ruta) cuerpo = <div class="cargando" role="status" aria-label="Cargando"><span class="pulso" /></div>
   else {
-    const visibles = RUTAS.filter((r) => r.roles.includes(s.rol))
-    const pedida = hash.value.replace(/^#\/?/, '').split('?')[0]
-    const ruta = visibles.find((r) => r.ruta === pedida)
-    if (!ruta) { if (pedida && RUTAS.some((r) => r.ruta === pedida)) avisar('bad', 'No tiene permiso para esa sección.'); location.hash = '#/panel'; return null }
     const Vista = ruta.vista
     cuerpo = <Layout ruta={ruta}><Vista /></Layout>
   }

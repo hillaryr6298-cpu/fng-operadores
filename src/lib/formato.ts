@@ -1,4 +1,4 @@
-import type { EtapaValor, Estatus } from '../../shared/dominio'
+import type { EtapaValor, Estatus, Rol } from '../../shared/dominio'
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
@@ -41,3 +41,7 @@ export const CLASE_ESTATUS: Record<Estatus, string> = {
 }
 export const ETIQUETA_MODALIDAD = { FULL: 'Full', SENCILLO: 'Sencillo', MOVEDOR: 'Movedor' } as const
 export const ETIQUETA_RESULTADO = { FECHA: 'Fecha', NA_LOCAL: 'N/A local', OP_VIAJE: 'Op. viaje', OK: 'OK', NO_APTO: 'No apto' } as const
+
+export const ETIQUETA_ROL: Record<Rol, string> = {
+  admin: 'Administrador', gerente_rh: 'Gerente de RH', reclutador: 'Reclutador', consulta: 'Consulta',
+}

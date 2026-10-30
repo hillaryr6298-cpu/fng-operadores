@@ -136,7 +136,7 @@ export function puedeEditar(rol:Rol, uid:string, reclutadorId:string): boolean
 
 **Interfaces — Produces:** `parsearHojaOperadores(filas: any[][], reclutadores: {id:string;nombre:string}[], hoy: Date): { filas: OperadorInput[]; errores: {fila:number; mensaje:string}[] }` en `excel.ts`. Mapea columnas por encabezado del Excel (A–Q); texto "N|A (LOCAL)"→`NA_LOCAL`, "OP. VIAJE"→`OP_VIAJE`, "OK"→`OK`, "NO APTO"→`NO_APTO`, fecha real→`FECHA`; ignora filas vacías y recorta espacios; reclutador por nombre (CARMEN→perfil); estatus "PREMEDICO CRYO"→`PREMEDICO_CRYO` etc.; hoja DESCARTADOS → `DESCARTADO` con `observaciones` como `motivo_descarte`. `importar-excel` in `{filas: OperadorInput[], confirmar:boolean}`: sin `confirmar` valida y devuelve vista previa/errores sin escribir; con `confirmar` crea en lote y audita. Solo admin y gerente_rh. `bases-admin` in `{accion:'crear'|'activar'|'desactivar', nombre}` solo admin.
 
-- [ ] **Step 1: Tests que fallan** (parser con las filas reales del Excel de octubre como fixture): 26 activos + 2 descartados parseados sin errores; `'MARIO PRUEBA GARCIA '` recortado; duplicado dentro del archivo → error con número de fila; reclutador inexistente → error; función sin `confirmar` no escribe nada; rol `reclutador` → 403.
+- [ ] **Step 1: Tests que fallan** (parser con las filas reales del Excel de octubre como fixture): 20 activos + 2 descartados parseados sin errores; `'MARIO PRUEBA GARCIA '` recortado; duplicado dentro del archivo → error con número de fila; reclutador inexistente → error; función sin `confirmar` no escribe nada; rol `reclutador` → 403.
 - [ ] **Step 2:** Run `npx vitest run src/lib/excel` y `node --test appwrite/functions/importar-excel` → FAIL.
 - [ ] **Step 3:** Implementar parser y funciones.
 - [ ] **Step 4:** Run tests → PASS.
@@ -209,7 +209,7 @@ Rutas (hash): `#/login`, `#/panel`, `#/operadores`, `#/tablero`, `#/descartados`
 
 - [ ] **Step 1:** Test: exportar e importar de nuevo el mismo conjunto produce filas equivalentes (ida y vuelta).
 - [ ] **Step 2:** Run → FAIL; implementar → PASS.
-- [ ] **Step 3:** Cargar el Excel real de octubre (`Operadores_en_ProcesoFNG_2026.xlsx`) con la vista previa; Expected: 28 filas aceptadas, 0 errores.
+- [ ] **Step 3:** Cargar el Excel real de octubre (`Operadores_en_ProcesoFNG_2026.xlsx`) con la vista previa; Expected: 22 filas aceptadas, 0 errores.
 - [ ] **Step 4:** Commit.
 
 ### Task 12: Usuarios, Bases y Auditoría
@@ -239,5 +239,5 @@ Rutas (hash): `#/login`, `#/panel`, `#/operadores`, `#/tablero`, `#/descartados`
 - [ ] **Step 1:** Workflow: en push a `main`, `npm ci && npm test && npm run build`, subir `dist` con `actions/upload-pages-artifact` y desplegar con `actions/deploy-pages` (versiones fijadas). Activar Pages con origen "GitHub Actions" (API con token del usuario o paso manual indicado en README).
 - [ ] **Step 2:** Pedir al usuario registrar la plataforma web en Appwrite (hostname `hillaryr6298-cpu.github.io`); sin esto el login desde Pages fallará por CORS.
 - [ ] **Step 3:** Push; esperar el workflow; abrir `https://hillaryr6298-cpu.github.io/fng-operadores/`; iniciar sesión como admin y verificar con Playwright.
-- [ ] **Step 4:** Importar el Excel de octubre en producción (28 filas) y verificar conteos contra el Excel.
+- [ ] **Step 4:** Importar el Excel de octubre en producción (22 filas) y verificar conteos contra el Excel.
 - [ ] **Step 5:** Entregar al usuario la lista de cierre: revocar la API key y el token de GitHub compartidos en el chat y crear nuevos con el mínimo permiso; cambiar la contraseña temporal del admin; documentar respaldo manual.

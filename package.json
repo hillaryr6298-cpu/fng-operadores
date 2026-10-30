@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "test:functions": "node --test appwrite/functions/*/test/",
+    "test:functions": "node --test \"appwrite/functions/*/test/*.test.js\"",
     "test:e2e": "playwright test"
   },
   "dependencies": {

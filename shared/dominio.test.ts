@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ETAPAS, normalizarNombre, validarOperador, fechaInicio, totalDias,
-  aDocumento, deDocumento, puedeEditar, type OperadorInput, type EtapaClave,
+  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, type OperadorInput, type EtapaClave,
 } from './dominio'
 
 const HOY = new Date('2026-10-30T12:00:00Z')
@@ -139,5 +139,12 @@ describe('puedeEditar', () => {
   })
   it('consulta nunca', () => {
     expect(puedeEditar('consulta', 'a', 'a')).toBe(false)
+  })
+})
+
+describe('etiquetaDeRol', () => {
+  it('quita el guion bajo porque Appwrite solo admite etiquetas alfanuméricas', () => {
+    expect(etiquetaDeRol('gerente_rh')).toBe('gerenterh')
+    expect(etiquetaDeRol('admin')).toBe('admin')
   })
 })

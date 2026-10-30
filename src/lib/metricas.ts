@@ -48,3 +48,16 @@ export function atrasados(ops: Op[], hoy: Date, umbral = 15): { op: Op; dias: nu
     .filter((x): x is { op: Op; dias: number } => x.dias !== null && x.dias > umbral)
     .sort((a, b) => b.dias - a.dias)
 }
+
+export type FilaResumen = { clave: string; enProceso: number; contratados: number; descartados: number; promedioDias: number | null }
+
+export function resumenPor(ops: Op[], campo: 'base' | 'reclutador_nombre', hoy: Date): FilaResumen[] {
+  const grupos = new Map<string, Op[]>()
+  for (const o of ops) grupos.set(o[campo], [...(grupos.get(o[campo]) ?? []), o])
+  return [...grupos]
+    .map(([clave, g]) => ({
+      clave, enProceso: g.filter(enProceso).length, contratados: g.filter((o) => o.estatus === 'CONTRATADO').length,
+      descartados: g.filter((o) => o.estatus === 'DESCARTADO').length, promedioDias: promedioDias(g, hoy),
+    }))
+    .sort((a, b) => a.clave.localeCompare(b.clave))
+}

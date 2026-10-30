@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { atrasados, conteoPorEstatus, conteoPorEtapa, etapaActual, porReclutador, promedioDias } from './metricas'
+import { resumenPor, atrasados, conteoPorEstatus, conteoPorEtapa, etapaActual, porReclutador, promedioDias } from './metricas'
 import { ETAPAS } from '../../shared/dominio'
 import type { Op } from './datos'
 
@@ -50,5 +50,20 @@ describe('atrasados', () => {
       op('cerrado', { estatus: 'CONTRATADO' }, { quimica_sanguinea: f('2026-08-01') }),
     ]
     expect(atrasados(ops, HOY, 15).map((x) => [x.op.id, x.dias])).toEqual([['viejo', 59], ['medio', 25]])
+  })
+})
+
+describe('resumenPor', () => {
+  it('agrupa por base con conteos y promedio de días de los que siguen en proceso', () => {
+    const ops = [
+      op('a', { base: 'SLP' }, { quimica_sanguinea: f('2026-10-20') }),
+      op('b', { base: 'SLP' }, { quimica_sanguinea: f('2026-10-10') }),
+      op('c', { base: 'SLP', estatus: 'CONTRATADO' }, { quimica_sanguinea: f('2026-10-01'), contratacion: f('2026-10-11') }),
+      op('d', { base: 'TEX', estatus: 'DESCARTADO' }),
+    ]
+    expect(resumenPor(ops, 'base', HOY)).toEqual([
+      { clave: 'SLP', enProceso: 2, contratados: 1, descartados: 0, promedioDias: 15 },
+      { clave: 'TEX', enProceso: 0, contratados: 0, descartados: 1, promedioDias: null },
+    ])
   })
 })

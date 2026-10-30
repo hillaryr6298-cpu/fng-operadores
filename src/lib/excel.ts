@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 import {
-  ETAPAS, ESTATUS, normalizarNombre, validarOperador,
+  ETAPAS, ESTATUS, normalizarNombre, totalDias, validarOperador,
   type EtapaClave, type Estatus, type OperadorInput, type Resultado,
 } from '../../shared/dominio'
 
@@ -108,4 +108,46 @@ export function leerLibro(buf: ArrayBuffer): { nombre: string; filas: unknown[][
     nombre,
     filas: XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[nombre], { header: 1, raw: true, defval: null }),
   }))
+}
+
+const ENCABEZADOS_SALIDA = [
+  'NOMBRE OPERADOR', 'BASE', 'RECLUTADOR', 'MODALIDAD', 'ESTATUS', 'QUÍMICA SANGUÍNEA', 'REVISION MEDICA INTERNA',
+  'SOLICITUD DE EXAMEN CRYO', 'REVALORACIÓN', 'RESULTADO PREMEDICOS CRYO', 'PRUEBA DE MANEJO', 'ENVÍO LABORATORIOS',
+  'ENVIO RESULTADOS CLIENTE', 'DICTAMEN CRYO', 'CONTRATACION', 'TOTAL DÍAS', 'OBSERVACIONES',
+]
+const TEXTO_RES: Record<string, string> = { NA_LOCAL: 'N|A (LOCAL)', OP_VIAJE: 'OP. VIAJE', OK: 'OK', NO_APTO: 'NO APTO' }
+
+function celdaSalida(v: { fecha: string | null; res: Resultado | null } | undefined): Date | string | null {
+  if (!v) return null
+  if (v.fecha) { const [y, m, d] = v.fecha.split('-').map(Number); return new Date(y, m - 1, d) } // local, como espera SheetJS
+  return v.res && v.res !== 'FECHA' ? TEXTO_RES[v.res] : null
+}
+
+type OpExport = OperadorInput & { reclutador_nombre: string }
+
+function hojaDe(ops: OpExport[], hoy: Date): XLSX.WorkSheet {
+  const filas = ops.map((o) => [
+    o.nombre, o.base, o.reclutador_nombre, o.modalidad, o.estatus === 'VALIDACION_CARTAS' ? 'VALIDACION DE CARTAS' : o.estatus.replace(/_/g, ' '),
+    ...ETAPAS.map((e) => celdaSalida(o.etapas[e.clave])), totalDias(o.etapas, hoy),
+    o.estatus === 'DESCARTADO' ? o.motivo_descarte ?? '' : o.observaciones ?? '',
+  ])
+  const ws = XLSX.utils.aoa_to_sheet([ENCABEZADOS_SALIDA, ...filas], { cellDates: true })
+  ws['!cols'] = ENCABEZADOS_SALIDA.map((h, i) => ({ wch: i === 0 ? 36 : i === 16 ? 40 : 16 }))
+  return ws
+}
+
+/** Genera un .xlsx con las hojas OPERADORES, DESCARTADOS y RESUMEN. */
+export function exportarLibro(ops: OpExport[], hoy: Date): ArrayBuffer {
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, hojaDe(ops.filter((o) => o.estatus !== 'DESCARTADO'), hoy), 'OPERADORES')
+  XLSX.utils.book_append_sheet(wb, hojaDe(ops.filter((o) => o.estatus === 'DESCARTADO'), hoy), 'DESCARTADOS')
+  const porEstatus = new Map<string, number>()
+  for (const o of ops) porEstatus.set(o.estatus, (porEstatus.get(o.estatus) ?? 0) + 1)
+  const ETQ: Record<string, string> = {
+    PREMEDICO_INTERNO: 'Premédico interno', VALIDACION_CARTAS: 'Validación de cartas', PREMEDICO_CRYO: 'Premédico Cryo',
+    LABORATORIOS: 'Laboratorios', DICTAMEN: 'Dictamen', CONTRATADO: 'Contratado', DESCARTADO: 'Descartado',
+  }
+  const resumen = [['RESUMEN', ''], ['Estatus', 'Operadores'], ...[...porEstatus].map(([k, n]) => [ETQ[k] ?? k, n]), [], ['Total', ops.length]]
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'RESUMEN')
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx', cellDates: true }) as ArrayBuffer
 }

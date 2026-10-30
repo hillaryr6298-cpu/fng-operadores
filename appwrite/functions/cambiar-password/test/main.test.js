@@ -38,3 +38,11 @@ test('éxito: cambia contraseña, limpia debe_cambiar, cierra sesiones y audita'
   const aud = (await m.tdb.listRows({ tableId: 'auditoria' })).rows[0]
   assert.equal(aud.accion, 'cambiar_password'); assert.ok(!JSON.stringify(aud).includes('Nueva-Contraseña-9'))
 })
+
+test('si Appwrite rechaza la contraseña por política se explica en español (400), no 500', async () => {
+  const m = montar()
+  m.users.updatePassword = async () => { throw Object.assign(new Error('The password you are trying to use has been exposed in a data breach'), { code: 400 }) }
+  const r = await llamar(m, 'rec1', { actual: 'Actual-Temporal-1', nueva: 'Nueva-Contraseña-9' })
+  assert.equal(r.status, 400)
+  assert.match(r.body.errores[0].mensaje, /filtraciones/i)
+})

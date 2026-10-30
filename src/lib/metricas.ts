@@ -35,11 +35,12 @@ export function promedioDias(ops: Op[], hoy: Date): number | null {
   return d.length ? Math.round(d.reduce((a, b) => a + b, 0) / d.length) : null
 }
 
-/** Días desde la última fecha registrada (null si no hay ninguna fecha). */
+/** Días desde la última fecha registrada (o desde el alta si no hay fechas de etapa). */
 export function diasSinAvance(o: Op, hoy: Date): number | null {
   const fechas = ETAPAS.map((e) => o.etapas[e.clave]?.fecha).filter((f): f is string => !!f).sort()
-  if (!fechas.length) return null
-  return Math.round((hoy.getTime() - Date.parse(fechas[fechas.length - 1] + 'T00:00:00Z')) / MS_DIA)
+  const ultima = fechas.length ? fechas[fechas.length - 1] : o.fecha_inicio // sin fechas de etapa: desde el alta
+  if (!ultima) return null
+  return Math.round((hoy.getTime() - Date.parse(ultima + 'T00:00:00Z')) / MS_DIA)
 }
 
 export function atrasados(ops: Op[], hoy: Date, umbral = 15): { op: Op; dias: number }[] {

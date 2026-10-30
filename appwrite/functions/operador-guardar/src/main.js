@@ -48,15 +48,26 @@ export async function manejar({ tdb, ahora, uid, cuerpo }) {
   const errores = validarOperador(nuevo, ahora)
   if (!ESTATUS.includes(nuevo.estatus)) errores.push({ campo: 'estatus', mensaje: 'Estatus no válido.' })
 
-  // Reclutador asignado: debe existir y estar activo.
-  let reclutador = null
-  if (nuevo.reclutador_id) {
-    try {
-      reclutador = await tdb.getRow({ databaseId: DB, tableId: 'perfiles', rowId: nuevo.reclutador_id })
-    } catch { /* se reporta abajo */ }
+  // Reclutador: solo se valida al crear o al cambiarlo (un reclutador dado de baja no debe bloquear editar ni descartar).
+  let nombreRec = previa?.reclutador_nombre
+  if (accion === 'crear' || nuevo.reclutador_id !== previa.reclutador_id) {
+    let reclutador = null
+    if (nuevo.reclutador_id) {
+      try {
+        reclutador = await tdb.getRow({ databaseId: DB, tableId: 'perfiles', rowId: nuevo.reclutador_id })
+      } catch { /* se reporta abajo */ }
+    }
     if (!reclutador || !reclutador.activo || reclutador.rol !== 'reclutador')
       errores.push({ campo: 'reclutador_id', mensaje: 'El reclutador no existe o está inactivo.' })
     else if (accion === 'crear' && !puedeEditar(yo.rol, yo.uid, nuevo.reclutador_id)) return err(403, 'No puede crear operadores para otro reclutador.')
+    nombreRec = reclutador?.nombre
+  }
+
+  // Base: debe existir y estar activa (se tolera la que ya tenía asignada).
+  if (nuevo.base && nuevo.base !== previa?.base) {
+    const { rows } = await tdb.listRows({ databaseId: DB, tableId: 'bases', queries: [Query.limit(200)] })
+    if (!rows.some((b) => b.activa && normalizarNombre(b.nombre) === normalizarNombre(nuevo.base)))
+      errores.push({ campo: 'base', mensaje: 'La base no existe o está inactiva.' })
   }
 
   const norm = normalizarNombre(nuevo.nombre ?? '')
@@ -66,11 +77,10 @@ export async function manejar({ tdb, ahora, uid, cuerpo }) {
   }
   if (errores.length) return err(400, 'Datos no válidos.', errores)
 
-  const nombreRec = reclutador.nombre
   if (accion === 'crear') {
     let fila
     try {
-      fila = await tdb.createRow({ databaseId: DB, tableId: 'operadores', rowId: ID.unique(), data: aFila(nuevo, nombreRec, 1) })
+      fila = await tdb.createRow({ databaseId: DB, tableId: 'operadores', rowId: ID.unique(), data: aFila(nuevo, nombreRec, 1, { ahora }) })
     } catch (e) {
       if (e.code === 409) return nombreRepetido() // la restricción única cubre altas simultáneas
       throw e
@@ -86,7 +96,7 @@ export async function manejar({ tdb, ahora, uid, cuerpo }) {
     if (e.code === 400 || e.code === 409) return conflicto(await tdb.getRow({ databaseId: DB, tableId: 'operadores', rowId: id }))
     throw e
   }
-  const data = aFila(nuevo, nombreRec, previa.version + 1)
+  const data = aFila(nuevo, nombreRec, previa.version + 1, { ahora, previa })
   delete data.version // ya incrementada de forma atómica
   let fila
   try {

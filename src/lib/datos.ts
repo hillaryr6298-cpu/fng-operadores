@@ -22,7 +22,7 @@ export function aplicarEvento(lista: Op[], tipo: 'create' | 'update' | 'delete',
   const nuevo = deFila(fila)
   const i = lista.findIndex((o) => o.id === nuevo.id)
   if (i < 0) return [...lista, nuevo]
-  if (nuevo.version <= lista[i].version) return lista
+  if (nuevo.version < lista[i].version) return lista // igual versión: se reemplaza (el guardado emite 2 eventos con la misma versión)
   const copia = lista.slice()
   copia[i] = nuevo
   return copia

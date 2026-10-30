@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { validarOperador, type EtapaClave, type EtapaValor } from '../../../shared/dominio'
 import { guardarOperador } from '../../lib/api'
 import { opAEntrada } from '../../lib/datos'
-import { hoyISO, hoyLocal } from '../../lib/formato'
+import { hoyISO, hoyLocal, valorAlEnter } from '../../lib/formato'
 import { integrarOp, opDesdeDoc, operadores } from '../../lib/store'
 import { avisar } from './toast'
 import { ETAPAS } from '../../../shared/dominio'
@@ -49,7 +49,7 @@ export function EditorEtapa({ opId, clave, ancla, onCerrar }: { opId: string; cl
   const estilo = `left:${Math.min(ancla.left, innerWidth - 300)}px;${abajo ? `bottom:${innerHeight - ancla.top + 6}px` : `top:${ancla.bottom + 6}px`}`
   const tecla = (e: KeyboardEvent) => {
     if (e.key === 'Escape') onCerrar()
-    if (e.key === 'Enter') { e.preventDefault(); void (fecha ? guardar({ fecha, res: 'FECHA' }) : guardar({ fecha: null, res: null })) }
+    if (e.key === 'Enter') { e.preventDefault(); const v = valorAlEnter(fecha); if (v) void guardar(v) }
   }
 
   return (

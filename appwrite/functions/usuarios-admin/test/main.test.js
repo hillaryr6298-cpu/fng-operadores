@@ -88,3 +88,20 @@ test('usuario inexistente → 404', async () => {
   const m = montar()
   assert.equal((await llamar(m, 'admin1', { accion: 'activar', id: 'nadie' })).status, 404)
 })
+
+test('crear: contraseña rechazada por política de Appwrite → 400 explicado', async () => {
+  const m = montar()
+  m.users.create = async () => { throw Object.assign(new Error('Password must not contain personal data like name, email'), { code: 400 }) }
+  const r = await llamar(m, 'admin1', { accion: 'crear', email: 'g@x.mx', nombre: 'Gina', rol: 'consulta', passwordTemporal: PASS })
+  assert.equal(r.status, 400)
+  assert.match(r.body.errores[0].mensaje, /nombre|correo/i)
+})
+test('cambiar_email actualiza Auth y perfil, y audita', async () => {
+  const m = montar()
+  m.users.updateEmail = async ({ userId, email }) => { m.users._u.get(userId).email = email }
+  const r = await llamar(m, 'admin1', { accion: 'cambiar_email', id: 'rec1', email: 'Nuevo@X.mx' })
+  assert.equal(r.status, 200)
+  assert.equal(m.users._u.get('rec1').email, 'nuevo@x.mx')
+  assert.equal((await m.tdb.getRow({ tableId: 'perfiles', rowId: 'rec1' })).email, 'nuevo@x.mx')
+  assert.equal((await llamar(m, 'admin1', { accion: 'cambiar_email', id: 'rec1', email: 'no-es-correo' })).status, 400)
+})

@@ -45,3 +45,8 @@ export const ETIQUETA_RESULTADO = { FECHA: 'Fecha', NA_LOCAL: 'N/A local', OP_VI
 export const ETIQUETA_ROL: Record<Rol, string> = {
   admin: 'Administrador', gerente_rh: 'Gerente de RH', reclutador: 'Reclutador', consulta: 'Consulta',
 }
+
+/** Valor que guarda la tecla Enter en el editor de etapa; null = no hacer nada (no borra un resultado existente). */
+export function valorAlEnter(fecha: string): EtapaValor | null {
+  return fecha ? { fecha, res: 'FECHA' } : null
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtFecha, textoEtapa, etiquetaMes, hoyLocal, hoyISO } from './formato'
+import { valorAlEnter, fmtFecha, textoEtapa, etiquetaMes, hoyLocal, hoyISO } from './formato'
 
 describe('formato', () => {
   it('fmtFecha pasa AAAA-MM-DD a dd/mm/aa', () => {
@@ -22,4 +22,9 @@ describe('formato', () => {
     expect(d.toISOString().slice(0, 10)).toBe('2026-10-30')
     expect(hoyISO(new Date(2026, 9, 30, 22, 30))).toBe('2026-10-30')
   })
+})
+
+describe('valorAlEnter', () => {
+  it('con fecha guarda esa fecha', () => { expect(valorAlEnter('2026-10-05')).toEqual({ fecha: '2026-10-05', res: 'FECHA' }) })
+  it('sin fecha no borra nada (null = no hacer nada)', () => { expect(valorAlEnter('')).toBeNull() })
 })

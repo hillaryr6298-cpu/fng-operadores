@@ -38,7 +38,7 @@ export function Descartados() {
           <tbody>
             {lista.map((o) => (
               <tr key={o.id}>
-                <td class="nom" onClick={() => abrirOperador(o.id)}>{o.nombre}</td><td>{o.base}</td><td>{o.reclutador_nombre}</td><td>{ETIQUETA_MODALIDAD[o.modalidad]}</td>
+                <td class="nom"><button type="button" class="enlace-nombre" onClick={() => abrirOperador(o.id)}>{o.nombre}</button></td><td>{o.base}</td><td>{o.reclutador_nombre}</td><td>{ETIQUETA_MODALIDAD[o.modalidad]}</td>
                 <td style="white-space:normal;min-width:240px;max-width:420px">{o.motivo_descarte || <span class="dim">Sin motivo registrado</span>}</td>
                 <td style="text-align:right">{gerencia && <button class="btn chico" type="button" onClick={() => { setDestino('PREMEDICO_INTERNO'); setRestaurar(o) }}>Restaurar</button>}</td>
               </tr>))}

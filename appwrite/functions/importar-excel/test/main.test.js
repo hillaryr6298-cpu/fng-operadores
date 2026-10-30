@@ -58,3 +58,17 @@ test('más de 500 filas → 400', async () => {
   const filas = Array.from({ length: 501 }, (_, i) => op(i))
   assert.equal((await llamar(montar(), 'admin1', { filas, confirmar: false })).status, 400)
 })
+
+test('si falla la escritura de una fila, se revierte todo el lote', async () => {
+  const tdb = montar()
+  const original = tdb.createRow.bind(tdb)
+  let n = 0
+  tdb.createRow = async (a) => { if (a.tableId === 'operadores' && ++n === 3) throw new Error('boom'); return original(a) }
+  await assert.rejects(() => llamar(tdb, 'admin1', { filas: [op(1), op(2), op(3), op(4)], confirmar: true }))
+  assert.equal((await tdb.listRows({ tableId: 'operadores' })).total, 0)
+})
+test('acepta hasta 150 filas por lote', async () => {
+  const filas = Array.from({ length: 150 }, (_, i) => op(i))
+  assert.equal((await llamar(montar(), 'admin1', { filas, confirmar: false })).status, 200)
+  assert.equal((await llamar(montar(), 'admin1', { filas: [...filas, op(999)], confirmar: false })).status, 400)
+})

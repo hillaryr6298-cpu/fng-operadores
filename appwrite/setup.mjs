@@ -122,7 +122,7 @@ async function adminInicial(email, pass, nombre) {
   if (!u) u = await users.create({ userId: ID.unique(), email, password: pass, name: nombre })
   await users.updateLabels({ userId: u.$id, labels: [etiquetaDeRol('admin')] })
   if (!(await existe(() => tdb.getRow({ databaseId: DB, tableId: 'perfiles', rowId: u.$id })))) {
-    await tdb.createRow({ databaseId: DB, tableId: 'perfiles', rowId: u.$id, data: { nombre, rol: 'admin', activo: true, email } })
+    await tdb.createRow({ databaseId: DB, tableId: 'perfiles', rowId: u.$id, data: { nombre, rol: 'admin', activo: true, email, debe_cambiar: true } })
   }
   console.log('+ admin', email)
 }

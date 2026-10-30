@@ -18,27 +18,28 @@ const perfiles = () => ({
   con1: { nombre: 'Luis', rol: 'consulta', activo: true, email: 'l@x.mx' },
   baja: { nombre: 'Baja', rol: 'reclutador', activo: false, email: 'b@x.mx' },
 })
+const BASES = { slp: { nombre: 'SLP', activa: true }, tex: { nombre: 'TEX', activa: false } }
 const llamar = (tdb, uid, cuerpo) => manejar({ tdb, ahora: AHORA, uid, cuerpo })
 const nuevo = async (tdb, uid = 'rec1', d = datos()) => (await llamar(tdb, uid, { accion: 'crear', datos: d })).body.doc
 
 test('sin identidad → 401', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   assert.equal((await llamar(tdb, undefined, { accion: 'crear', datos: datos() })).status, 401)
 })
 test('rol consulta → 403', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   assert.equal((await llamar(tdb, 'con1', { accion: 'crear', datos: datos() })).status, 403)
 })
 test('perfil desactivado → 403', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   assert.equal((await llamar(tdb, 'baja', { accion: 'crear', datos: datos({ reclutador_id: 'baja' }) })).status, 403)
 })
 test('reclutador no puede crear para otro reclutador → 403', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   assert.equal((await llamar(tdb, 'rec2', { accion: 'crear', datos: datos({ reclutador_id: 'rec1' }) })).status, 403)
 })
 test('crear guarda nombre normalizado, version 1, fecha_inicio y auditoría', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const r = await llamar(tdb, 'rec1', {
     accion: 'crear',
     datos: datos({ etapas: { ...etapasVacias(), revision_medica_interna: { fecha: '2026-10-12', res: 'FECHA' } } }),
@@ -56,26 +57,26 @@ test('crear guarda nombre normalizado, version 1, fecha_inicio y auditoría', as
   assert.equal(aud[0].antes, null)
 })
 test('nombre duplicado con otros acentos/espacios → 400 en nombre', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   await nuevo(tdb)
   const r = await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ nombre: ' PEDRO  PRUEBA ALVAREZ ' }) })
   assert.equal(r.status, 400)
   assert.ok(r.body.errores.some((e) => e.campo === 'nombre'))
 })
 test('datos inválidos → 400 con errores y sin escribir', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const r = await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ estatus: 'CONTRATADO' }) })
   assert.equal(r.status, 400)
   assert.equal((await tdb.listRows({ tableId: 'operadores' })).total, 0)
 })
 test('reclutador no dueño no puede actualizar → 403', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const r = await llamar(tdb, 'rec2', { accion: 'actualizar', id: doc.id, version: doc.version, datos: datos({ observaciones: 'x' }) })
   assert.equal(r.status, 403)
 })
 test('versión vieja → 409 sin escribir', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   await llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'a' }) })
   const r = await llamar(tdb, 'ger1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'b' }) })
@@ -83,7 +84,7 @@ test('versión vieja → 409 sin escribir', async () => {
   assert.equal((await tdb.getRow({ tableId: 'operadores', rowId: doc.id })).observaciones, 'a')
 })
 test('actualizar incrementa versión y audita antes/después', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const r = await llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'nota' }) })
   assert.equal(r.status, 200)
@@ -93,26 +94,26 @@ test('actualizar incrementa versión y audita antes/después', async () => {
   assert.match(aud.despues, /"observaciones":"nota"/)
 })
 test('reclutador no puede reasignar el operador → 403', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const r = await llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ reclutador_id: 'rec2' }) })
   assert.equal(r.status, 403)
 })
 test('gerente sí puede reasignar', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const r = await llamar(tdb, 'ger1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ reclutador_id: 'rec2' }) })
   assert.equal(r.status, 200)
   assert.equal((await tdb.getRow({ tableId: 'operadores', rowId: doc.id })).reclutador_nombre, 'ALEX')
 })
 test('actualizar no permite pasar a DESCARTADO ni CONTRATADO (usar acciones propias)', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const r = await llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ estatus: 'DESCARTADO', motivo_descarte: 'x' }) })
   assert.equal(r.status, 400)
 })
 test('descartar exige motivo', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const r = await llamar(tdb, 'rec1', { accion: 'descartar', id: doc.id, version: 1, datos: { motivo_descarte: ' ' } })
   assert.equal(r.status, 400)
@@ -121,7 +122,7 @@ test('descartar exige motivo', async () => {
   assert.equal((await tdb.getRow({ tableId: 'operadores', rowId: doc.id })).estatus, 'DESCARTADO')
 })
 test('contratar exige dictamen OK', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   assert.equal((await llamar(tdb, 'rec1', { accion: 'contratar', id: doc.id, version: 1 })).status, 400)
   const conDictamen = datos({ etapas: { ...etapasVacias(), dictamen_cryo: { fecha: '2026-10-29', res: 'OK' } } })
@@ -130,7 +131,7 @@ test('contratar exige dictamen OK', async () => {
   assert.equal(ok.status, 200)
 })
 test('solo admin/gerente restauran un descartado', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   await llamar(tdb, 'rec1', { accion: 'descartar', id: doc.id, version: 1, datos: { motivo_descarte: 'x' } })
   const d = datos({ estatus: 'PREMEDICO_CRYO' })
@@ -138,12 +139,12 @@ test('solo admin/gerente restauran un descartado', async () => {
   assert.equal((await llamar(tdb, 'ger1', { accion: 'actualizar', id: doc.id, version: 2, datos: d })).status, 200)
 })
 test('acción desconocida → 400', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   assert.equal((await llamar(tdb, 'admin1', { accion: 'borrar' })).status, 400)
 })
 
 test('dos actualizaciones simultáneas con la misma versión: una gana, la otra recibe 409', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const doc = await nuevo(tdb)
   const [a, b] = await Promise.all([
     llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'A' }) }),
@@ -155,11 +156,48 @@ test('dos actualizaciones simultáneas con la misma versión: una gana, la otra 
   assert.equal(fila.observaciones, a.status === 200 ? 'A' : 'B')
 })
 test('dos altas simultáneas del mismo nombre: la restricción única evita el duplicado (400)', async () => {
-  const tdb = crearFake({ perfiles: perfiles() })
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
   const [a, b] = await Promise.all([
     llamar(tdb, 'rec1', { accion: 'crear', datos: datos() }),
     llamar(tdb, 'ger1', { accion: 'crear', datos: datos({ nombre: 'pedro  PRUEBA álvarez' }) }),
   ])
   assert.deepEqual([a.status, b.status].sort(), [200, 400])
   assert.equal((await tdb.listRows({ tableId: 'operadores' })).total, 1)
+})
+
+test('desactivar al reclutador no bloquea editar, descartar ni contratar sus operadores', async () => {
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
+  const doc = await nuevo(tdb)
+  await tdb.updateRow({ tableId: 'perfiles', rowId: 'rec1', data: { activo: false } })
+  const etapas = { ...etapasVacias(), quimica_sanguinea: { fecha: '2026-10-16', res: 'FECHA' } }
+  const a = await llamar(tdb, 'ger1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ etapas }) })
+  assert.equal(a.status, 200, JSON.stringify(a.body))
+  const d = await llamar(tdb, 'ger1', { accion: 'descartar', id: doc.id, version: 2, datos: { motivo_descarte: 'BAJA' } })
+  assert.equal(d.status, 200, JSON.stringify(d.body))
+})
+test('reasignar a un reclutador inactivo sí se rechaza', async () => {
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
+  const doc = await nuevo(tdb)
+  const r = await llamar(tdb, 'ger1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ reclutador_id: 'baja' }) })
+  assert.equal(r.status, 400)
+})
+test('el nombre visible conserva Ñ y acentos; nombre_norm no', async () => {
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
+  const r = await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ nombre: '  José  Muñoz Ibáñez ' }) })
+  assert.equal(r.status, 200)
+  const f = await tdb.getRow({ tableId: 'operadores', rowId: r.body.doc.id })
+  assert.equal(f.nombre, 'JOSÉ MUÑOZ IBÁÑEZ'); assert.equal(f.nombre_norm, 'JOSE MUNOZ IBANEZ')
+})
+test('operador sin fechas recibe como fecha de inicio el día del alta', async () => {
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
+  const r = await llamar(tdb, 'rec1', { accion: 'crear', datos: datos() })
+  assert.match((await tdb.getRow({ tableId: 'operadores', rowId: r.body.doc.id })).fecha_inicio, /^2026-10-30/)
+})
+test('base inexistente o inactiva → 400; base ya asignada inactiva se tolera al editar otra cosa', async () => {
+  const tdb = crearFake({ perfiles: perfiles(), bases: BASES })
+  assert.equal((await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ base: 'NOEXISTE' }) })).status, 400)
+  assert.equal((await llamar(tdb, 'rec1', { accion: 'crear', datos: datos({ base: 'TEX' }) })).status, 400)
+  const doc = await nuevo(tdb)
+  await tdb.updateRow({ tableId: 'bases', rowId: 'slp', data: { activa: false } })
+  assert.equal((await llamar(tdb, 'rec1', { accion: 'actualizar', id: doc.id, version: 1, datos: datos({ observaciones: 'x' }) })).status, 200)
 })

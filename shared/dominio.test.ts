@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ETAPAS, normalizarNombre, validarOperador, fechaInicio, totalDias,
-  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, validarPassword, type OperadorInput, type EtapaClave,
+  aDocumento, deDocumento, puedeEditar, etiquetaDeRol, validarPassword, limpiarNombre, type OperadorInput, type EtapaClave,
 } from './dominio'
 
 const HOY = new Date('2026-10-30T12:00:00Z')
@@ -159,5 +159,11 @@ describe('validarPassword', () => {
   })
   it('rechaza contraseñas sin variedad (solo un carácter repetido)', () => {
     expect(validarPassword('aaaaaaaaaaaaaa')).not.toBeNull()
+  })
+})
+
+describe('limpiarNombre', () => {
+  it('conserva acentos y Ñ, pasa a mayúsculas y colapsa espacios', () => {
+    expect(limpiarNombre('  José  muñoz ')).toBe('JOSÉ MUÑOZ')
   })
 })

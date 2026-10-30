@@ -8,7 +8,7 @@ Cambio vs v1: backend pasa de Supabase a **Appwrite Cloud** (proyecto `fng`, id 
 Digitalizar el Excel "Operadores en Proceso FNG 2026" (hoja por mes + DESCARTADOS). Cada operador avanza por 10 etapas de contratación. Reemplaza al Excel para 40+ usuarios simultáneos (RH, gerentes, reclutadores) con login, roles, auditoría y datos privados protegidos.
 
 **Criterios de éxito**
-- Los 26 operadores activos y 2 descartados de octubre 2026 se importan sin pérdida.
+- Los 20 operadores activos y 2 descartados de octubre 2026 se importan sin pérdida.
 - Un reclutador actualiza una etapa en ≤ 2 clics o con teclado.
 - Ningún usuario lee o escribe fuera de su rol (probado por rol).
 - Todo cambio queda en auditoría (quién, cuándo, antes, después) y no se puede saltar desde el navegador.

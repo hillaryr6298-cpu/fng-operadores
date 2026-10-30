@@ -1,30 +1,8 @@
-import {
-  ESTATUS, aDocumento, deDocumento, fechaInicio, normalizarNombre, validarOperador,
-} from '../../../../shared/dominio.ts'
+import { ESTATUS, normalizarNombre, validarOperador } from '../../../../shared/dominio.ts'
+import { aFila, filaADominio, salida } from '../../_comun/operadores.js'
 import { DB, ID, Query, autenticar, auditar, envolver, err, esAdminOGerente, puedeEditar, respuesta } from '../../_comun/comun.js'
 
 const ACCIONES = ['crear', 'actualizar', 'descartar', 'contratar']
-const aFechaApp = (f) => (f ? `${f}T00:00:00.000+00:00` : null)
-
-function filaADominio(fila) {
-  return deDocumento(fila)
-}
-
-function aFila(datos, reclutadorNombre, version) {
-  const d = aDocumento(datos)
-  for (const k of Object.keys(d)) if (k.endsWith('_fecha')) d[k] = aFechaApp(d[k])
-  return {
-    ...d,
-    nombre: normalizarNombre(datos.nombre),
-    nombre_norm: normalizarNombre(datos.nombre),
-    reclutador_nombre: reclutadorNombre,
-    version,
-    fecha_inicio: aFechaApp(fechaInicio(datos.etapas)),
-  }
-}
-
-const salida = (fila) => ({ id: fila.$id, version: fila.version, ...filaADominio(fila) })
-
 export async function manejar({ tdb, ahora, uid, cuerpo }) {
   const { yo, fallo } = await autenticar(tdb, uid)
   if (fallo) return fallo

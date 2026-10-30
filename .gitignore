@@ -9,3 +9,5 @@ test-results
 playwright-report
 appwrite/functions/*/shared
 *.xlsx
+appwrite/.build
+appwrite/_dbg.mjs

@@ -177,7 +177,7 @@ table.tabla { border-collapse: separate; border-spacing: 0; width: 100%; font-si
 }
 .drawer-cab { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .drawer-cuerpo { padding: 20px 22px; overflow: auto; flex: 1; display: grid; gap: 16px; align-content: start; }
-.drawer-pie { padding: 14px 22px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; background: var(--surface-2); }
+.drawer-pie { flex-wrap: wrap; padding: 14px 22px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; background: var(--surface-2); }
 .dos-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .etapas-form { display: grid; gap: 8px; }
 .etapa-fila { display: grid; grid-template-columns: 1fr 130px 150px; gap: 8px; align-items: center; }

@@ -103,7 +103,7 @@ export function OperadorForm({ opId, onCerrar }: { opId: string | null; onCerrar
   const pie = (
     <>
       {existente && editable && !cerrado && (
-        <div style="margin-right:auto;display:flex;gap:8px">
+        <div style="margin-right:auto;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn peligro" type="button" onClick={() => { setMotivo(''); setModal('descartar') }}>Descartar…</button>
           <button class="btn" type="button" onClick={() => setModal('contratar')}>Marcar contratado</button>
         </div>

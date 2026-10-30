@@ -80,3 +80,31 @@ describe('errores', () => {
     expect(r.errores[0].mensaje).toMatch(/dictamen/i)
   })
 })
+
+import { exportarLibro } from './excel'
+import { deFila } from './datos'
+import * as XLSX from 'xlsx'
+import { leerLibro } from './excel'
+import { aDocumento } from '../../shared/dominio'
+
+describe('exportarLibro', () => {
+  const ops = [
+    ...parsearHojaOperadores(hojas.octubre as any[][], REC, HOY).filas.map((f, i) => ({ ...f, id: `a${i}`, version: 1, reclutador_nombre: REC.find((r) => r.id === f.reclutador_id)!.nombre, fecha_inicio: null })),
+    ...parsearHojaOperadores(hojas.descartados as any[][], REC, HOY, { descartados: true }).filas.map((f, i) => ({ ...f, id: `d${i}`, version: 1, reclutador_nombre: 'RECLUTADOR A', fecha_inicio: null })),
+  ]
+  it('ida y vuelta: exportar y volver a importar conserva nombres, etapas y motivos', () => {
+    const libro = leerLibro(exportarLibro(ops as any, HOY))
+    expect(libro.map((h) => h.nombre)).toEqual(expect.arrayContaining(['OPERADORES', 'DESCARTADOS', 'RESUMEN']))
+    const act = parsearHojaOperadores(libro.find((h) => h.nombre === 'OPERADORES')!.filas, REC, HOY)
+    const des = parsearHojaOperadores(libro.find((h) => h.nombre === 'DESCARTADOS')!.filas, REC, HOY, { descartados: true })
+    expect(act.errores).toEqual([]); expect(des.errores).toEqual([])
+    const esperado = ops.filter((o) => o.estatus !== 'DESCARTADO')
+    expect(act.filas).toHaveLength(esperado.length)
+    expect(act.filas.map((f) => aDocumento(f))).toEqual(esperado.map((f) => aDocumento(f)).map((d, i) => ({ ...d, reclutador_id: act.filas[i].reclutador_id })))
+    expect(des.filas.map((f) => f.motivo_descarte)).toEqual(ops.filter((o) => o.estatus === 'DESCARTADO').map((o) => o.motivo_descarte))
+  })
+  it('la hoja RESUMEN lista conteos por estatus', () => {
+    const resumen = leerLibro(exportarLibro(ops as any, HOY)).find((h) => h.nombre === 'RESUMEN')!.filas
+    expect(JSON.stringify(resumen)).toContain('Laboratorios')
+  })
+})

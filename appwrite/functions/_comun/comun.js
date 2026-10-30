@@ -39,7 +39,7 @@ export async function autenticar(tdb, uid) {
     return { fallo: err(403, 'Perfil no encontrado.') }
   }
   if (!p.activo) return { fallo: err(403, 'Usuario desactivado.') }
-  return { yo: { uid, nombre: p.nombre, rol: p.rol } }
+  return { yo: { uid, nombre: p.nombre, rol: p.rol, debeCambiar: !!p.debe_cambiar } }
 }
 
 export async function auditar(tdb, yo, { entidad, registro_id, accion, antes, despues }, ahora) {

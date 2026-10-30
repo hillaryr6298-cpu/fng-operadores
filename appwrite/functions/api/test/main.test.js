@@ -28,3 +28,12 @@ test('enruta a operadores (crear sin datos → 400, no 404 de módulo)', async (
   assert.equal(r.status, 400)
   assert.match(r.body.mensaje, /datos/i)
 })
+
+test('con cambio de contraseña pendiente el servidor solo permite el módulo password', async () => {
+  const tdb = crearFake({ perfiles: { u1: { nombre: 'Ana', rol: 'admin', activo: true, debe_cambiar: true } }, bases: {} })
+  const r = await llamar(tdb, 'u1', { modulo: 'bases', accion: 'crear', nombre: 'X' })
+  assert.equal(r.status, 403)
+  assert.match(r.body.mensaje, /contraseña/i)
+  const p = await llamar(tdb, 'u1', { modulo: 'password', actual: 'a' })        // llega al módulo (faltan datos → 400, no 403)
+  assert.equal(p.status, 400)
+})

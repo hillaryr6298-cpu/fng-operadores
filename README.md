@@ -12,6 +12,7 @@ Interfaz estática en **GitHub Pages**; datos, usuarios y reglas de negocio en *
 - `shared/dominio.ts` — reglas de negocio (validaciones, cálculo de días, roles). Se usa en el front y en el servidor.
 - `appwrite/setup.mjs` — crea el esquema, permisos y bases semilla (idempotente).
 - `appwrite/deploy-functions.mjs` — empaqueta y despliega la Function `api`.
+- `appwrite/endurecer.mjs` — políticas de seguridad del proyecto (contraseñas, sesiones, métodos de acceso, registro cerrado).
 - `appwrite/test-permisos.mjs` — pruebas de permisos contra Appwrite real, con un usuario temporal por rol.
 
 ## Roles
@@ -45,6 +46,7 @@ Pruebas contra Appwrite real (requieren `APPWRITE_API_KEY` en el entorno, **nunc
 ```bash
 export NODE_USE_ENV_PROXY=1   # solo si hay proxy
 node appwrite/setup.mjs --admin-email correo@empresa.mx --admin-pass '<contraseña-temporal-12+>' --admin-nombre 'Nombre'
+node appwrite/endurecer.mjs      # políticas de contraseña/sesión y cierre del auto-registro
 node appwrite/deploy-functions.mjs
 node appwrite/test-permisos.mjs
 ```
@@ -60,3 +62,5 @@ node appwrite/test-permisos.mjs
 - **Respaldo**: Appwrite Free no incluye respaldos automáticos. Exporte periódicamente desde *Reportes → Descargar Excel* (y, si necesita todo, desde la consola de Appwrite).
 - **Inactividad**: los proyectos gratuitos de Appwrite pueden pausarse tras un periodo sin actividad; revise los límites vigentes de su plan.
 - **Rotación de llaves**: si una API key o token se comparte por error, revóquelo y cree otro con permisos mínimos.
+
+Ver también `docs/seguridad.md` (auditoría y pendientes).
